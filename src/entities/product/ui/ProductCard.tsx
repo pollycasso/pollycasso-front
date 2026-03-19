@@ -1,0 +1,99 @@
+import { Coin } from '@/assets';
+import type { Product } from '../model/types';
+import { cn } from '@/shared/lib';
+import { getShopItemUrl } from '@/shared/lib/assets';
+import { getLevelColor } from '@/shared/lib/color';
+import { SHOP_CATEGORIES } from '@/features/shop/constants/shop.constants';
+
+interface ProductItemProps {
+  product: Product;
+  isInCart: boolean;
+  isOwned?: boolean;
+  isBuyDisabled?: boolean;
+  onAddToCart: (product: Product) => void;
+  onWearItem: (product: Product) => void;
+}
+
+export const ProductCard = ({
+  product,
+  isInCart,
+  isOwned = false,
+  isBuyDisabled = false,
+  onAddToCart,
+  onWearItem,
+}: ProductItemProps) => {
+  const isConsumable = product.subCategory === SHOP_CATEGORIES.ITEM;
+
+  const isButtonDisabled = !isConsumable && (isInCart || isBuyDisabled);
+
+  const getButtonText = () => {
+    if (isBuyDisabled && !isConsumable) return '구매됨';
+    if (isInCart && !isConsumable) return '담김';
+    return '담기';
+  };
+
+  return (
+    <div
+      className="group flex flex-col items-center justify-between w-[240px] h-[350px] bg-white rounded-[20px] text-2xl font-bold text-gray-400 p-5 cursor-pointer hover:scale-[1.02] transition-all duration-300 relative overflow-hidden shadow-md"
+      onClick={() => onWearItem(product)}
+    >
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-100 pointer-events-none scale-110">
+        <p className="text-white text-base font-medium leading-snug break-keep text-center">
+          {product.description}
+        </p>
+      </div>
+
+      <div className="w-full h-[52px] flex gap-x-2">
+        <div
+          className={`w-[45px] h-[45px] ${getLevelColor(product.level)} rounded-full shrink-0`}
+        ></div>
+        <div className="flex flex-col justify-center flex-1 text-base overflow-hidden">
+          <span className="text-black text-lg">Lv.{product.level}</span>
+          <span className="text-[#535353] truncate text-xl">
+            {product.name}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative w-full flex-1 my-2">
+        {isOwned && (
+          <div className="absolute top-0 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10 pointer-events-none">
+            보유중
+          </div>
+        )}
+
+        <img
+          src={getShopItemUrl(product.image)}
+          className="w-full h-[190px] object-contain px-4"
+          alt={product.name}
+        />
+      </div>
+
+      <div className="flex justify-between w-full h-[45px] rounded-lg overflow-hidden shrink-0 z-30">
+        <div className="flex items-center justify-center w-2/3 h-full bg-black">
+          <img src={Coin} className="w-5 h-5" alt="coin" />
+          <span className="text-white text-lg ml-2 pt-0.5">
+            {product.price}coin
+          </span>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isButtonDisabled) {
+              onAddToCart(product);
+            }
+          }}
+          disabled={isButtonDisabled}
+          className={cn(
+            'flex justify-center items-center w-1/3 h-full text-base text-white pt-0.5 transition-colors',
+            isButtonDisabled
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-[#2CC724] hover:bg-[#2c9527]',
+          )}
+        >
+          {getButtonText()}
+        </button>
+      </div>
+    </div>
+  );
+};

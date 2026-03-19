@@ -1,0 +1,43 @@
+import { FaceFrownIcon } from '@heroicons/react/24/outline';
+
+import { FriendCard, useFriend } from '@/entities/friend';
+import { FriendListSkeleton } from './FriendListSkeleton';
+
+interface FriendListProps {
+  searchKeyword: string;
+}
+
+export const FriendList = ({ searchKeyword }: FriendListProps) => {
+  const { processedFriends, handleFriendAction, isLoading } =
+    useFriend(searchKeyword);
+
+  return (
+    <div className="flex-1 px-5 pb-10 overflow-y-auto custom-scrollbar">
+      {isLoading ? (
+        <FriendListSkeleton />
+      ) : processedFriends.length > 0 ? (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+          {processedFriends.map((friend) => (
+            <FriendCard
+              key={friend.userId}
+              {...friend}
+              onAction={(action) => handleFriendAction(friend.userId, action)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-white/50 gap-y-4">
+          <FaceFrownIcon className="w-24 h-24 opacity-60" />
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white/80">
+              검색된 친구가 없어요.
+            </p>
+            <p className="text-lg mt-1 font-light">
+              닉네임이나 태그를 다시 확인해주세요!
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
