@@ -1,37 +1,19 @@
 ---
-name: 버그 이슈
-about: '🐞 발생한 버그에 대해 간결하게 설명해주세요.'
-title: '버그 제보'
-labels: 🐞 bug
-assignees: electrohyun
+name: Bug Report Template
+about: 버그 리포트 이슈 템플릿
+title: ''
+labels: '🐞 BugFix'
+assignees: ''
 ---
 
-## 🚨 어떤 버그인가요?
+## 🐞 버그 설명
 
-- 발생한 버그에 대해 간결하게 설명해주세요.
+- 어떤 버그인지 간결하게 설명해주세요
 
-## 🐞 재현 방법 (Steps to Reproduce)
+## 🔎 발생 이유
 
-- 버그를 재현할 수 있는 순서를 구체적으로 작성해주세요.
+- (가능하면) Given-When-Then 형식으로 서술해주세요
 
-1. ...
-2. ...
-3. ...
+## 🤔 기대한 동작
 
-## 🤔 예상 결과 (Expected Behavior)
-
-- 원래라면 어떻게 동작해야 했는지 작성해주세요.
-
-## 😮 실제 결과 (Actual Behavior)
-
-- 실제로 어떻게 동작했는지 스크린샷이나 로그 메시지를 포함하여 작성해주세요.
-
-## 🖥️ 환경 (Environment)
-
-- **OS**:
-- **Browser**:
-- **Version**:
-
-## ETC
-
-- 기타 버그 해결에 도움이 될 만한 정보를 추가해주세요.
+- 예상했던 정상적인 결과가 어떤 것이었는지 설명해주세요

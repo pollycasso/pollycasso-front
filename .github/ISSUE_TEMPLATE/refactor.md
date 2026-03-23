@@ -3,7 +3,7 @@ name: 리팩터링 이슈
 about: '🔨 로직 분리, 구조 개선, FSD 정리 등 코드 품질 향상 작업에 대해 간결하게 설명해주세요.'
 title: '로직 분리, 구조 개선, FSD 정리 등 코드 품질 향상 작업'
 labels: 🔨 refactor
-assignees: electrohyun
+assignees: ''
 ---
 
 ## 🧐 어떤 리팩터링 작업인가요?
