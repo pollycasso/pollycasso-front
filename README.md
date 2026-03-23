@@ -55,8 +55,6 @@
       <strong>younjieun</strong><br>
       <a href="https://github.com/yxxjxxeee">@yxxjxxeee</a>
     </td>
-  </tr>
-  <tr>
     <td align="center">
       <img src="https://github.com/dlehdhun.png" width="200"/><br/>
       이동훈<br>
