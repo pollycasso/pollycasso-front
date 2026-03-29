@@ -5,7 +5,6 @@
 ### 🎨 실시간 드로잉 배틀! 폴리카소(Pollycasso) 🦜
 
 #### **✨Designed by [@seohyunlim](https://github.com/seohyunlim), [@kimjisue05](https://github.com/kimjisue05)✨**
-
 </div>
 
 # 🚀 소개
@@ -50,16 +49,10 @@
 <table>
   <tr>
     <td align="center">
-      <img src="https://github.com/yxxjxxeee.png" width="200"/><br/>
-      윤지은<br>
-      <strong>younjieun</strong><br>
-      <a href="https://github.com/yxxjxxeee">@yxxjxxeee</a>
-    </td>
-    <td align="center">
-      <img src="https://github.com/dlehdhun.png" width="200"/><br/>
-      이동훈<br>
-      <strong>dlehdhun</strong><br>
-      <a href="https://github.com/dlehdhun">@dlehdhun</a>
+      <img src="https://github.com/electrohyun.png" width="200"/><br/>
+      정기현<br>
+      <strong>Electrohyun</strong><br>
+      <a href="https://github.com/electrohyun">@electrohyun</a>
     </td>
   </tr>
 </table>
@@ -69,6 +62,18 @@
 <table>
   <tr>
     <td align="center">
+      <img src="https://github.com/yxxjxxeee.png" width="200"/><br/>
+      younjieun<br>
+      <strong>Back-End</strong><br>
+      <a href="https://github.com/yxxjxxeee">@yxxjxxeee</a>
+    </td>
+    <td align="center">
+      <img src="https://github.com/dlehdhun.png" width="200"/><br/>
+      dlehdgns<br>
+      <strong>Back-End</strong><br>
+      <a href="https://github.com/dlehdhun">@dlehdhun</a>
+    </td>
+    <td align="center">
       <img src="https://github.com/seohyunlim.png" width="200"/><br/>
       임서현<br>
       <strong>Designer</strong><br>
@@ -76,7 +81,7 @@
     </td>
     <td align="center">
       <img src="https://github.com/kimjisue05.png" width="200"/><br/>
-      김지수<br>
+      kimjisue<br>
       <strong>Designer</strong><br>
       <a href="https://github.com/kimjisue05">@kimjisue05</a>
     </td>

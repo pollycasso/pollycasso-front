@@ -14,7 +14,7 @@ export const WardrobeProductList = ({
 }: WardrobeProductListProps) => {
   return (
     <div className="w-full h-full overflow-y-auto pl-10 pr-6 custom-wardrobe-scrollbar">
-      <div className="grid grid-cols-3 gap-x-[20px] gap-y-[30px] pb-10">
+      <div className="grid grid-cols-3 gap-x-[20px] gap-y-[30px] pb-10 pt-3">
         {products.length === 0 ? (
           <div className="col-span-3 h-[400px] flex items-center justify-center text-white/50 text-xl font-bold">
             보유한 아이템이 없습니다.
@@ -31,6 +31,7 @@ export const WardrobeProductList = ({
                 product={item}
                 isEquipped={isEquipped}
                 onWear={onWearItem}
+                quantity={(item as any).quantity}
               />
             );
           })

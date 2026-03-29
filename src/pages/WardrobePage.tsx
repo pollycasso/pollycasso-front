@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { CharacterPreview } from '@/entities/character';
-import { useShopPreview } from '@/features/shop';
-import { MOCK_PRODUCTS } from '@/mocks/shop.mock';
+import { useAuthStore } from '@/entities/user';
+import { useShopPreview, CATEGORY_TO_OUTFIT_KEY } from '@/features/shop';
+import { useWardrobeInventory, useWardrobeConsumables, useEquipOutfit } from '@/features/wardrobe';
 import { WardrobeProductList } from '@/widgets/wardrobe';
 import {
   useWardrobeFilter,
@@ -11,6 +12,7 @@ import { cn } from '@/shared/lib';
 import { useWaitingSocket } from '@/shared/api/socket/WaitingSocketProvider';
 import { useNudgeListener } from '@/features/lobby/model/useNudgeListener';
 import { BackButton } from '@/shared/ui/BackButton';
+import { Spinner } from '@/shared/ui/Spinner';
 
 const USER_LEVEL = 3;
 
@@ -28,7 +30,23 @@ const WardrobePage = () => {
     };
   }, [waitingSocket]);
 
-  const { previewItems, resetPreview, wearItem } = useShopPreview();
+  const { previewItems, resetPreview, wearItem, initPreview } = useShopPreview();
+  const { data: inventoryData, isSuccess } = useWardrobeInventory();
+  const inventory = inventoryData?.inventory || [];
+  const { data: consumablesData } = useWardrobeConsumables();
+  const consumables = consumablesData?.inventory || [];
+  const { mutate: equipOutfit, isPending: isEquipping } = useEquipOutfit();
+  const updateOutfit = useAuthStore((state) => state.updateOutfit);
+
+  const isInitialized = useRef(false);
+
+  useEffect(() => {
+    if (isSuccess && !isInitialized.current) {
+      const equippedItems = inventory.filter((item) => item.isEquipped);
+      initPreview(equippedItems);
+      isInitialized.current = true;
+    }
+  }, [isSuccess, inventory, initPreview]);
 
   const {
     activeTab,
@@ -42,10 +60,13 @@ const WardrobePage = () => {
   } = useWardrobeFilter();
 
   const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter(
+    if (activeTab === 'SKILL') {
+      return consumables;
+    }
+    return inventory.filter(
       (item) => item.subCategory === currentFilterLabel,
     );
-  }, [currentFilterLabel]);
+  }, [inventory, consumables, currentFilterLabel, activeTab]);
 
   return (
     <div className="flex items-center justify-center w-full min-h-screen gap-[24px] font-ssrm font-bold">
@@ -73,8 +94,58 @@ const WardrobePage = () => {
           >
             초기화
           </button>
-          <button className="flex-1 py-3 rounded-full bg-[#EF5F52] text-white hover:bg-[#d64538] transition-colors">
-            확인
+          <button
+            onClick={() => {
+              const outfitIds: Record<string, number | null> = {
+                bird: null, hat: null, accessory: null, top: null, bottom: null, shoes: null, effect: null,
+              };
+              const socketOutfit: Record<string, string | null> = {
+                bird: 'bird_01', 
+                hat: null, 
+                accessory: null, 
+                top: null, 
+                bottom: null, 
+                shoes: null, 
+                effect: null,
+              };
+
+              previewItems.forEach((item) => {
+                const key = CATEGORY_TO_OUTFIT_KEY[item.subCategory || ''];
+                if (key) {
+                  outfitIds[key] = item.id;
+                  socketOutfit[key] = item.image;
+                }
+              });
+
+              equipOutfit(
+                { outfitIds: outfitIds as any },
+                {
+                  onSuccess: () => {
+                    if (waitingSocket) {
+                      // 명세서 규격에 맞는 소켓 전림
+                      waitingSocket.emit('room:updateOutfit', { outfit: socketOutfit });
+                    }
+                    // 로컬 스토어 동기화 (image 문자열 ID 우선)
+                    updateOutfit(socketOutfit as any);
+                  },
+                }
+              );
+            }}
+            disabled={isEquipping}
+            className={cn(
+              'flex-1 flex justify-center items-center py-3 rounded-full transition-colors text-white',
+              isEquipping
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-[#EF5F52] hover:bg-[#d64538]',
+            )}
+          >
+            {isEquipping ? (
+              <div className="flex items-center gap-2">
+                <Spinner size="sm" transparent />
+              </div>
+            ) : (
+              '확인'
+            )}
           </button>
         </div>
       </div>

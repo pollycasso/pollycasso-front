@@ -23,7 +23,7 @@ const WelcomePage = () => {
       >
         <div className="relative w-full h-full bg-black/5">
           {OUTFIT_LAYERS.map((layer) => {
-            const partId = user.outfit![layer];
+            const partId = user.outfit?.[layer];
             if (!partId) return null;
 
             return (

@@ -44,7 +44,7 @@ const ShopPage = () => {
       <ShopProfilePanel
         cart={cart}
         previewItems={shopPreview.previewItems}
-        userBalance={user?.coin ?? 0}
+        userBalance={user?.coins ?? 0}
         userLevel={user?.level ?? 1}
         onRemoveFromCart={removeFromCart}
         onResetPreview={shopPreview.resetPreview}

@@ -26,11 +26,11 @@ export const useAuthStore = create<AuthState>()(
 
       updateOutfit: (newOutfit) =>
         set((state) => {
-          if (!state.user || !state.user.outfit) return state;
+          if (!state.user) return state;
           return {
             user: {
               ...state.user,
-              outfit: { ...state.user.outfit, ...newOutfit },
+              outfit: { ...(state.user.outfit || {}), ...newOutfit } as any,
             },
           };
         }),

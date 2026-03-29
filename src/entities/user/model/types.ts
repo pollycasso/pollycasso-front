@@ -4,7 +4,7 @@ export interface User {
   id: number;
   nickname: string;
   tag: string;
-  coin?: number;
+  coins?: number;
   level?: number;
   currentExp?: number;
   outfit?: Outfit;
