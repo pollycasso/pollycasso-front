@@ -17,7 +17,7 @@ export const useNudgeListener = () => {
   useEffect(() => {
     if (!waitingSocket) return;
 
-    const handleNudge = ({ senderId }: { senderId: string }) => {
+    const handleNudge = () => {
       if (!isMuted)
         SoundManager.playSfx(SOUND_ASSETS.SFX.LOBBY_JOINED2, sfxVolume);
       overlay.open(({ unmount }) => {

@@ -30,6 +30,7 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 290,
     inventory: [],
+    team: 'BLUE',
     outfit: createOutfit({
       bird: 'king_penguin',
       hat: 'laurel_wreath',
@@ -48,6 +49,7 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 280,
     inventory: [],
+    team: 'RED',
     outfit: createOutfit({ bird: 'sparrow', accessory: 'silver_medal' }),
   },
   {
@@ -62,6 +64,7 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 270,
     inventory: [],
+    team: 'BLUE',
     outfit: createOutfit({ bird: 'chick', accessory: 'bronze_medal' }),
   },
   {
@@ -76,6 +79,7 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 260,
     inventory: [],
+    team: 'RED',
     outfit: createOutfit({ bird: 'duck_white' }),
   },
   {
@@ -90,6 +94,7 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 250,
     inventory: [],
+    team: 'NONE',
     outfit: createOutfit({ bird: 'owl_grey', hat: 'glasses' }),
   },
   {
@@ -104,11 +109,13 @@ export const MOCK_PLAYERS: Player[] = [
     isReady: true,
     totalScore: 240,
     inventory: [],
+    team: 'NONE',
     outfit: createOutfit({ bird: 'parrot_basic' }),
   },
 ];
 
 export const MOCK_FINISH_CONTEXT: FinishContext = {
+  kind: 'FINISHED',
   results: [
     {
       userId: 'user_1',

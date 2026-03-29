@@ -4,15 +4,9 @@ import { useAuthStore } from '@/entities/user';
 import { useSocket } from '@/shared/api/socket';
 
 const ITEM_EFFECTS: Record<string, () => void> = {
-  ink_splash: () => {
-    // TODO: 먹물 이펙트 적용
-  },
-  blur: () => {
-    // TODO: 화면 흐리게 하기 이펙트 적용
-  },
-  bomb: () => {
-    // TODO: 캔버스 폭파 이펙트 적용
-  },
+  ink_splash: () => {},
+  blur: () => {},
+  bomb: () => {},
 };
 
 export const useItemEffect = () => {
@@ -29,17 +23,13 @@ export const useItemEffect = () => {
     }) => {
       const { itemId, targetUserId } = payload;
 
-      if (targetUserId !== myUserId) return;
+      if (String(targetUserId) !== String(myUserId)) return; 
 
       const effectFunc = ITEM_EFFECTS[itemId];
-
-      if (effectFunc) {
-        effectFunc();
-      }
+      if (effectFunc) effectFunc();
     };
 
     socket.on('game:applyEffect', handleApplyEffect);
-
     return () => {
       socket.off('game:applyEffect', handleApplyEffect);
     };

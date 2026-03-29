@@ -62,5 +62,9 @@ export const useShopPreview = () => {
     if (!isMuted) SoundManager.playSfx(SOUND_ASSETS.SFX.CLICK, sfxVolume);
   };
 
-  return { previewItems, wearItem, resetPreview };
+  const initPreview = (items: Product[]) => {
+    setPreviewItems(items);
+  };
+
+  return { previewItems, wearItem, resetPreview, initPreview };
 };

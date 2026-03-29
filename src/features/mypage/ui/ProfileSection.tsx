@@ -12,6 +12,8 @@ import { SOUND_ASSETS } from '@/shared/api/sound/assets';
 import { overlay } from 'overlay-kit';
 import { CreditsModal } from './CreditsModal';
 import { CreatorsModal } from '@/features/mypage/ui/CreatorsModal';
+import { patchMyPage } from '../api/patchMyPage';
+import { useAuthStore } from '@/entities/user';
 
 interface ProfileSectionProps {
   user: User;
@@ -41,6 +43,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
     handleSubmit,
     setError,
     setFocus,
+    reset,
     formState: { isSubmitting, errors, isValid, dirtyFields },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileUpdateSchema),
@@ -86,8 +89,24 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
     }
 
     try {
-      // TODO: API 호출로 프로필 수정
-      alert('수정이 완료되었습니다.');
+      const apiPayload: any = { ...payload };
+      if (payload.tag) {
+        apiPayload.tag = Number(payload.tag);
+      }
+
+      await patchMyPage(apiPayload);
+      
+      const { updateUser } = useAuthStore.getState();
+      const storePayload = { ...payload };
+      delete storePayload.currentPassword;
+      delete storePayload.newPassword;
+      updateUser(storePayload as Partial<User>);
+      
+      reset({
+        ...data,
+        currentPassword: '',
+        newPassword: '',
+      });
     } catch (error) {
       if (!isAxiosError<ApiFailureResponse>(error)) {
         console.error('Unknown Error:', error);
@@ -102,9 +121,14 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
           message: '비밀번호가 일치하지 않습니다.',
         });
         setFocus('currentPassword');
-      } else if (serverCode === 'DUPLICATE_NICKNAME') {
-        setError('nickname', { message: '이미 사용 중인 닉네임입니다.' });
+      } else if (serverCode === 'DUPLICATE_IDENTITY') {
+        setError('nickname', { message: '이미 존재하는 닉네임과 태그 조합입니다.' });
         setFocus('nickname');
+      } else if (serverCode === 'SOCIAL_USER_NO_PASSWORD') {
+        setError('currentPassword', { message: '소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.' });
+        setFocus('currentPassword');
+      } else if (serverCode === 'INVALID_INPUT') {
+        alert('입력값이 올바르지 않습니다. 조건을 다시 확인해주세요.');
       } else {
         alert('서버 오류가 발생했습니다.');
       }

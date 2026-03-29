@@ -21,6 +21,7 @@ export const SOCKET_EVENTS = {
   GAME_FINALIZE: 'game:finalize',
   GAME_START_EVALUATION: 'game:startEvaluation',
   GAME_SUBMIT_EVALUATION: 'game:submitEvaluation',
+  GAME_THEME_SUBMIT: 'game:themeSubmit',
 
   FRIEND_GET_ALL: 'friends:getList',
   FRIEND_GET_ALL_RESPONSE: 'friends:getList',

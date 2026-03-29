@@ -83,9 +83,9 @@ const MainPage = () => {
       <Sidebar
         nickname={user.nickname}
         tag={user.tag!}
-        level={user.level!}
-        currentXp={user.currentExp!}
-        coin={user.coin!}
+        level={user.level ?? 1}
+        currentXp={user.currentExp ?? 0}
+        coin={user.coins ?? (user as any).coin ?? 0}
         outfit={user.outfit!}
         onLogout={handleLogout}
       />

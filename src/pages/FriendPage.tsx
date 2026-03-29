@@ -6,7 +6,7 @@ import { useFriend } from '@/entities/friend';
 
 const FriendPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
-  const { recommendedFriends, isLoading } = useFriend('');
+  const { recommendedFriends } = useFriend('');
 
   return (
     <div className="flex items-center justify-center min-h-screen p-6 md:p-12 font-ssrm font-bold ">

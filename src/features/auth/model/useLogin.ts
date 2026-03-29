@@ -45,7 +45,7 @@ export const useLogin = () => {
       const { sub: id, nickname, tag } = parseAccessToken(accessToken);
 
       setAuth({
-        user: { id, nickname, tag },
+        user: { id, nickname, tag: String(tag) },
         accessToken: accessToken,
       });
 

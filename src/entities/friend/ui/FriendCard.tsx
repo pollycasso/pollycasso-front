@@ -21,7 +21,6 @@ interface FriendCardProps extends FriendProfile {
 }
 
 export const FriendCard = ({
-  userId,
   nickname,
   outfit,
   level,

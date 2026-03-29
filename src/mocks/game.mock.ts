@@ -49,6 +49,7 @@ const MOCK_ME: Player = {
   isConnected: true,
   isReady: false,
   teamId: 'BLUE',
+  team: 'BLUE',
   totalScore: 1200,
 };
 
@@ -65,6 +66,7 @@ const MOCK_OPPONENT: Player = {
   isConnected: true,
   isReady: true,
   teamId: 'RED',
+  team: 'RED',
   totalScore: 850,
 };
 
@@ -81,6 +83,7 @@ const MOCK_DISCONNECTED: Player = {
   isConnected: false,
   isReady: false,
   teamId: 'BLUE',
+  team: 'NONE',
   totalScore: 100,
 };
 
@@ -97,6 +100,7 @@ const MOCK_BONUS: Player = {
   isConnected: false,
   isReady: false,
   teamId: 'BLUE',
+  team: 'NONE',
   totalScore: 100,
 };
 
@@ -143,9 +147,9 @@ export const MOCK_GAME_SELECTING: RoomState = {
   players: [MOCK_ME, MOCK_OPPONENT, MOCK_DISCONNECTED, MOCK_BONUS],
 
   phaseContext: {
-    selectorId: 'id-2',
+    kind: 'THEME_SELECTING',
+    selectorId: 2,
     nickname: '폴리',
-    value: '',
   },
 
   teamScore: null,
@@ -169,6 +173,7 @@ export const MOCK_GAME_DRAWING: RoomState = {
   players: [MOCK_ME, MOCK_OPPONENT, MOCK_DISCONNECTED, MOCK_BONUS],
 
   phaseContext: {
+    kind: 'DRAWING',
     currentTheme: '',
   },
 

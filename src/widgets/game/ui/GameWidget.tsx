@@ -18,7 +18,7 @@ import type { PhaseContext, RoomStatus } from '@/shared/model';
 import { useGameState } from '../model/useGameState';
 import { useGameSubmission } from '../model/useGameSubmission';
 import { useThemeInput } from '../model/useThemeInput';
-import { useThemeSelecting } from '../model/useThemeSelecting';
+// import { useThemeSelecting } from '../model/useThemeSelecting';
 import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import { SOCKET_EVENTS } from '@/shared/api/socket';
 

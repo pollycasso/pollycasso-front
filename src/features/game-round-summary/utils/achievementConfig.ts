@@ -1,5 +1,4 @@
 import {
-  TrophyIcon,
   PaintBrushIcon,
   BoltIcon,
   SparklesIcon,

@@ -6,10 +6,10 @@ import {
 } from '@heroicons/react/24/solid';
 import { Crown } from '@/assets';
 import { cn } from '@/shared/lib';
-import { ScalableText } from './ScalableText';
 import { getOutfitImageUrl, OUTFIT_LAYERS } from '@/shared/lib/cdn';
 import type { Player } from '@/shared/model';
 import { getLevelColor } from '@/shared/lib/color';
+import { useAuthStore } from '@/entities/user';
 
 interface PlayerSlotProps {
   player?: Player;
@@ -28,7 +28,44 @@ export const PlayerSlot = ({
   onNudge,
   className,
 }: PlayerSlotProps) => {
-  // 쿨타임 관리
+  const { user } = useAuthStore();
+  const isMe = player && String(player.userId) === String(user?.id);
+
+  // 만약 내 슬롯인데 서버 데이터에 outfit이 없으면 내 로컬 정보를 우선 사용
+  const hasLocalOutfit = user?.outfit && Object.keys(user.outfit).length > 0;
+  let playerOutfit = isMe && hasLocalOutfit ? user.outfit : player?.outfit;
+  // outfit이 비어있으면 Outfit 타입 전체 기본값으로 fallback
+  if (
+    !playerOutfit ||
+    typeof playerOutfit !== 'object' ||
+    Object.keys(playerOutfit).length === 0
+  ) {
+    playerOutfit = {
+      bird: 'bird_01',
+      accessory: null,
+      hat: null,
+      top: null,
+      bottom: null,
+      shoes: null,
+      effect: null,
+    };
+  } else {
+    // bird 레이어가 없으면 강제로 bird_01 추가
+    if (!('bird' in playerOutfit) || !playerOutfit.bird) {
+      playerOutfit = { ...playerOutfit, bird: 'bird_01' };
+    }
+    // 나머지 Outfit 필드도 누락 시 null로 보완
+    playerOutfit = {
+      bird: playerOutfit.bird,
+      accessory: 'accessory' in playerOutfit ? playerOutfit.accessory : null,
+      hat: 'hat' in playerOutfit ? playerOutfit.hat : null,
+      top: 'top' in playerOutfit ? playerOutfit.top : null,
+      bottom: 'bottom' in playerOutfit ? playerOutfit.bottom : null,
+      shoes: 'shoes' in playerOutfit ? playerOutfit.shoes : null,
+      effect: 'effect' in playerOutfit ? playerOutfit.effect : null,
+    };
+  }
+
   const [isCoolingDown, setIsCoolingDown] = useState(false);
 
   if (!player) {
@@ -45,7 +82,6 @@ export const PlayerSlot = ({
 
   // 방장은 데이터상으로는 항상 준비 상태
   const isReadyVisual = player.isReady || isHost;
-  const playerOutfit = player.outfit;
 
   const STATUS_CONFIG = {
     IDLE: { text: '대기', color: 'bg-gray-200 text-gray-500' },
@@ -132,8 +168,8 @@ export const PlayerSlot = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between w-full mb-4">
-        <div className="flex items-center gap-2 w-full">
+      <div className="flex items-center justify-between w-full mb-4 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div
             className={`relative flex justify-center items-center shrink-0 w-10 h-10 rounded-full ${getLevelColor(player.level)} text-white font-bold text-lg shadow-sm`}
           >
@@ -146,8 +182,14 @@ export const PlayerSlot = ({
             )}
             {player.level}
           </div>
-          <div className="flex-1 min-w-0 text-2xl font-bold text-gray-800">
-            <ScalableText>{player.nickname}</ScalableText>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div
+              className="text-2xl font-bold text-gray-800 truncate"
+              title={player.nickname}
+              style={{ display: 'block' }}
+            >
+              {player.nickname}
+            </div>
           </div>
         </div>
 
@@ -186,8 +228,134 @@ export const PlayerSlot = ({
         )}
       >
         {OUTFIT_LAYERS.map((layer) => {
-          const partId = playerOutfit[layer];
-          if (!partId) return null;
+          let partId: string | null = null;
+
+          // 서버가 데이터를 중첩해서 보낼 수도 있으므로 모든 경로 탐색
+          const hasOutfit = (obj: any) =>
+            obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+
+          let rawData: any = playerOutfit;
+          if (!hasOutfit(rawData)) {
+            rawData =
+              (player as any).user?.outfit ||
+              (player as any).userOutfit ||
+              (player as any).memberOutfit ||
+              (player as any).costume ||
+              (player as any).costumeData ||
+              (player as any).appearance ||
+              (player as any).appearanceData;
+          }
+
+          // ...existing code...
+
+          let processedOutfit = rawData;
+          if (
+            typeof rawData === 'string' &&
+            (rawData.includes('{') || rawData.includes('['))
+          ) {
+            try {
+              processedOutfit = JSON.parse(rawData);
+            } catch (e) {
+              // 파싱 실패하더라도 rawData가 단순 이미지 ID일 수 있으므로 bird 레이어에 할당 시도
+              if (layer === 'bird') partId = rawData as string;
+            }
+          }
+
+          if (Array.isArray(processedOutfit)) {
+            const categoryMap: Record<string, string[]> = {
+              bird: ['BIRD', '새', 'BODY', 'body'],
+              accessory: ['ACCESSORY', 'ACC', '액세서리', 'acc'],
+              hat: ['HAT', '모자', 'hat'],
+              top: ['TOP', '상의', 'top'],
+              bottom: ['BOTTOM', '하의', 'bottom'],
+              shoes: ['SHOES', '신발', 'shoes'],
+              effect: ['EFFECT', '효과', 'effect'],
+            };
+            const targetCategories = categoryMap[layer] || [
+              layer.toUpperCase(),
+            ];
+
+            const item = (processedOutfit as any[]).find((i: any) => {
+              // 아이템 자체가 문자열일 경우 (["bird_01", "hat_07"])
+              if (typeof i === 'string') {
+                const lowerLayer = layer.toLowerCase();
+                const lowerI = i.toLowerCase();
+                if (lowerLayer === 'bird')
+                  return lowerI.includes('bird') || lowerI.includes('body');
+                if (lowerLayer === 'accessory')
+                  return lowerI.includes('acc') || lowerI.includes('accessory');
+                return lowerI.includes(lowerLayer);
+              }
+              const cat = (
+                i?.subCategory ||
+                i?.category ||
+                i?.type ||
+                i?.kind ||
+                ''
+              ).toUpperCase();
+              return targetCategories.includes(cat);
+            });
+
+            if (item) {
+              if (typeof item === 'string') {
+                partId = item;
+              } else {
+                // 명세서에 따라 image 필드를 최우선으로 사용
+                partId =
+                  item.image ||
+                  item.outfitImage ||
+                  item.imageUrl ||
+                  item.url ||
+                  item.imagePath ||
+                  (typeof item.id === 'string' ? item.id : null);
+              }
+            }
+          } else if (processedOutfit && typeof processedOutfit === 'object') {
+            const keyMap: Record<string, string[]> = {
+              bird: ['bird', 'BIRD', 'BODY', 'body'],
+              accessory: ['accessory', 'ACCESSORY', 'acc', 'ACC'],
+              hat: ['hat', 'HAT'],
+              top: ['top', 'TOP'],
+              bottom: ['bottom', 'BOTTOM'],
+              shoes: ['shoes', 'SHOES'],
+              effect: ['effect', 'EFFECT'],
+            };
+            const possibleKeys = keyMap[layer] || [
+              layer,
+              layer.toUpperCase(),
+              layer.toLowerCase(),
+            ];
+
+            for (const key of possibleKeys) {
+              const val = (processedOutfit as any)[key];
+              if (val !== undefined && val !== null) {
+                // 값이 문자열이면 바로 ID, 객체면 image 속성 탐색
+                partId =
+                  typeof val === 'string'
+                    ? val
+                    : val.image ||
+                      val.outfitImage ||
+                      val.imageUrl ||
+                      val.url ||
+                      val.imagePath ||
+                      null;
+
+                // 만약 단순 숫자 ID만 온다면 (과거 데이터 호완용), bird_01 등과 같은 형식 유추 시도
+                if (typeof val === 'number' && !partId) {
+                  if (layer === 'bird') partId = `bird_01`; // ID에 따른 매핑 로직이 없다면 기본값
+                }
+                break;
+              }
+            }
+          }
+
+          // 새(bird) 레이어인데 partId가 없으면 기본 새 이미지 사용
+          if (layer === 'bird' && !partId) {
+            partId = 'bird_01';
+          }
+
+          if (!partId || typeof partId !== 'string') return null;
+
           return (
             <img
               key={layer}
