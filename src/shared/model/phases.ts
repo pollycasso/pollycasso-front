@@ -22,7 +22,8 @@ export interface DrawingContext {
 
 export interface EvaluatingContext {
   kind: 'EVALUATING';
-  drawings: Record<string, DrawData>;
+  activeUserIds: string[];
+  readyUserIds: string[];
 }
 
 export interface RoundSummaryContext {

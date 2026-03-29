@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { useAuthStore } from '@/entities/user';
 import {
@@ -42,6 +42,12 @@ const GameWidget = ({
   const { completedCount, totalCount, isMeReady, toggleReady } =
     useGameSubmission();
 
+  // EVALUATING 단계에서 모든 그림 채점 완료 여부 추적
+  const allRatedRef = useRef(false);
+  const handleAllRatedChange = useCallback((allRated: boolean) => {
+    allRatedRef.current = allRated;
+  }, []);
+
   const syncedPlayers = useMemo(() => {
     if (!players) return [];
 
@@ -70,6 +76,10 @@ const GameWidget = ({
         return;
       }
       gameSocket?.emit(SOCKET_EVENTS.GAME_FINALIZE, { value: localInput });
+      return;
+    }
+    if (phase === 'EVALUATING' && !allRatedRef.current) {
+      alert('모든 그림에 점수를 입력한 후 완료할 수 있습니다.');
       return;
     }
     toggleReady();
@@ -108,7 +118,7 @@ const GameWidget = ({
         return <DrawingPhase />;
 
       case 'EVALUATING':
-        return <EvaluatingPhase />;
+        return <EvaluatingPhase onAllRatedChange={handleAllRatedChange} />;
 
       case 'ROUND_SUMMARY':
         return <RoundSummaryPhase />;
