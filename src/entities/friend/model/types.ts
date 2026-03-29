@@ -13,6 +13,7 @@ export interface FriendProfile {
   level: number;
   tag: string;
   isOnline: boolean;
+  relation: FriendRelation;
 }
 
 export type FriendAction =

@@ -30,11 +30,42 @@ export const PlayerSlot = ({
 }: PlayerSlotProps) => {
   const { user } = useAuthStore();
   const isMe = player && String(player.userId) === String(user?.id);
-  
+
   // 만약 내 슬롯인데 서버 데이터에 outfit이 없으면 내 로컬 정보를 우선 사용
   const hasLocalOutfit = user?.outfit && Object.keys(user.outfit).length > 0;
-  const playerOutfit = isMe && hasLocalOutfit ? user.outfit : player?.outfit;
-  
+  let playerOutfit = isMe && hasLocalOutfit ? user.outfit : player?.outfit;
+  // outfit이 비어있으면 Outfit 타입 전체 기본값으로 fallback
+  if (
+    !playerOutfit ||
+    typeof playerOutfit !== 'object' ||
+    Object.keys(playerOutfit).length === 0
+  ) {
+    playerOutfit = {
+      bird: 'bird_01',
+      accessory: null,
+      hat: null,
+      top: null,
+      bottom: null,
+      shoes: null,
+      effect: null,
+    };
+  } else {
+    // bird 레이어가 없으면 강제로 bird_01 추가
+    if (!('bird' in playerOutfit) || !playerOutfit.bird) {
+      playerOutfit = { ...playerOutfit, bird: 'bird_01' };
+    }
+    // 나머지 Outfit 필드도 누락 시 null로 보완
+    playerOutfit = {
+      bird: playerOutfit.bird,
+      accessory: 'accessory' in playerOutfit ? playerOutfit.accessory : null,
+      hat: 'hat' in playerOutfit ? playerOutfit.hat : null,
+      top: 'top' in playerOutfit ? playerOutfit.top : null,
+      bottom: 'bottom' in playerOutfit ? playerOutfit.bottom : null,
+      shoes: 'shoes' in playerOutfit ? playerOutfit.shoes : null,
+      effect: 'effect' in playerOutfit ? playerOutfit.effect : null,
+    };
+  }
+
   const [isCoolingDown, setIsCoolingDown] = useState(false);
 
   if (!player) {
@@ -152,8 +183,8 @@ export const PlayerSlot = ({
             {player.level}
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
-            <div 
-              className="text-2xl font-bold text-gray-800 truncate" 
+            <div
+              className="text-2xl font-bold text-gray-800 truncate"
               title={player.nickname}
               style={{ display: 'block' }}
             >
@@ -198,29 +229,30 @@ export const PlayerSlot = ({
       >
         {OUTFIT_LAYERS.map((layer) => {
           let partId: string | null = null;
-          
+
           // 서버가 데이터를 중첩해서 보낼 수도 있으므로 모든 경로 탐색
-          const hasOutfit = (obj: any) => obj && typeof obj === 'object' && Object.keys(obj).length > 0;
-          
+          const hasOutfit = (obj: any) =>
+            obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+
           let rawData: any = playerOutfit;
           if (!hasOutfit(rawData)) {
-            rawData = 
-              (player as any).user?.outfit || 
-              (player as any).userOutfit || 
+            rawData =
+              (player as any).user?.outfit ||
+              (player as any).userOutfit ||
               (player as any).memberOutfit ||
-              (player as any).costume || 
-              (player as any).costumeData || 
-              (player as any).appearance || 
+              (player as any).costume ||
+              (player as any).costumeData ||
+              (player as any).appearance ||
               (player as any).appearanceData;
           }
 
-          // 디버깅용 로그 (상대방일 때만 출력)
-          if (!isMe && layer === 'bird') {
-            console.log(`[PlayerSlot DEBUG] Player: ${player.nickname}, rawData:`, rawData);
-          }
-          
+          // ...existing code...
+
           let processedOutfit = rawData;
-          if (typeof rawData === 'string' && (rawData.includes('{') || rawData.includes('['))) {
+          if (
+            typeof rawData === 'string' &&
+            (rawData.includes('{') || rawData.includes('['))
+          ) {
             try {
               processedOutfit = JSON.parse(rawData);
             } catch (e) {
@@ -239,27 +271,43 @@ export const PlayerSlot = ({
               shoes: ['SHOES', '신발', 'shoes'],
               effect: ['EFFECT', '효과', 'effect'],
             };
-            const targetCategories = categoryMap[layer] || [layer.toUpperCase()];
-            
+            const targetCategories = categoryMap[layer] || [
+              layer.toUpperCase(),
+            ];
+
             const item = (processedOutfit as any[]).find((i: any) => {
               // 아이템 자체가 문자열일 경우 (["bird_01", "hat_07"])
               if (typeof i === 'string') {
                 const lowerLayer = layer.toLowerCase();
                 const lowerI = i.toLowerCase();
-                if (lowerLayer === 'bird') return lowerI.includes('bird') || lowerI.includes('body');
-                if (lowerLayer === 'accessory') return lowerI.includes('acc') || lowerI.includes('accessory');
+                if (lowerLayer === 'bird')
+                  return lowerI.includes('bird') || lowerI.includes('body');
+                if (lowerLayer === 'accessory')
+                  return lowerI.includes('acc') || lowerI.includes('accessory');
                 return lowerI.includes(lowerLayer);
               }
-              const cat = (i?.subCategory || i?.category || i?.type || i?.kind || '').toUpperCase();
+              const cat = (
+                i?.subCategory ||
+                i?.category ||
+                i?.type ||
+                i?.kind ||
+                ''
+              ).toUpperCase();
               return targetCategories.includes(cat);
             });
-            
+
             if (item) {
               if (typeof item === 'string') {
                 partId = item;
               } else {
                 // 명세서에 따라 image 필드를 최우선으로 사용
-                partId = item.image || item.outfitImage || item.imageUrl || item.url || item.imagePath || (typeof item.id === 'string' ? item.id : null);
+                partId =
+                  item.image ||
+                  item.outfitImage ||
+                  item.imageUrl ||
+                  item.url ||
+                  item.imagePath ||
+                  (typeof item.id === 'string' ? item.id : null);
               }
             }
           } else if (processedOutfit && typeof processedOutfit === 'object') {
@@ -272,20 +320,32 @@ export const PlayerSlot = ({
               shoes: ['shoes', 'SHOES'],
               effect: ['effect', 'EFFECT'],
             };
-            const possibleKeys = keyMap[layer] || [layer, layer.toUpperCase(), layer.toLowerCase()];
-            
+            const possibleKeys = keyMap[layer] || [
+              layer,
+              layer.toUpperCase(),
+              layer.toLowerCase(),
+            ];
+
             for (const key of possibleKeys) {
-               const val = (processedOutfit as any)[key];
-               if (val !== undefined && val !== null) {
-                  // 값이 문자열이면 바로 ID, 객체면 image 속성 탐색
-                  partId = typeof val === 'string' ? val : (val.image || val.outfitImage || val.imageUrl || val.url || val.imagePath || null);
-                  
-                  // 만약 단순 숫자 ID만 온다면 (과거 데이터 호완용), bird_01 등과 같은 형식 유추 시도
-                  if (typeof val === 'number' && !partId) {
-                     if (layer === 'bird') partId = `bird_01`; // ID에 따른 매핑 로직이 없다면 기본값
-                  }
-                  break;
-               }
+              const val = (processedOutfit as any)[key];
+              if (val !== undefined && val !== null) {
+                // 값이 문자열이면 바로 ID, 객체면 image 속성 탐색
+                partId =
+                  typeof val === 'string'
+                    ? val
+                    : val.image ||
+                      val.outfitImage ||
+                      val.imageUrl ||
+                      val.url ||
+                      val.imagePath ||
+                      null;
+
+                // 만약 단순 숫자 ID만 온다면 (과거 데이터 호완용), bird_01 등과 같은 형식 유추 시도
+                if (typeof val === 'number' && !partId) {
+                  if (layer === 'bird') partId = `bird_01`; // ID에 따른 매핑 로직이 없다면 기본값
+                }
+                break;
+              }
             }
           }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useFriendSocket } from '@/shared/api/socket/FriendSocketProvider';
+import type { FriendRelation } from '../model/types';
 import { useFriendStore } from './friendStore';
 
 export const useFriend = (searchKeyword: string = '') => {
@@ -78,7 +79,12 @@ export const useFriend = (searchKeyword: string = '') => {
       .filter((f) =>
         f.nickname.toLowerCase().includes(searchKeyword.toLowerCase()),
       )
-      .sort((a, b) => a.nickname.localeCompare(b.nickname));
+      .sort((a, b) => a.nickname.localeCompare(b.nickname))
+      .map((f) => ({
+        ...f,
+        userId: Number(f.userId),
+        relation: (f.relation ?? 'FRIEND') as FriendRelation,
+      }));
   }, [searchKeyword, friends]);
 
   return {

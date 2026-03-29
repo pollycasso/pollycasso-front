@@ -32,12 +32,10 @@ export const useWardrobeFilter = () => {
   };
 
   const currentFilterLabel =
-    activeTab === 'SKILL'
-      ? SHOP_CATEGORIES['SKILL']
-      : SHOP_CATEGORIES[itemCategory];
+    activeTab === 'SKILL' ? '스킬' : SHOP_CATEGORIES[itemCategory];
 
   const itemButtonLabel =
-    activeTab === 'ITEM' ? SHOP_CATEGORIES[itemCategory] : '아이템';
+    activeTab === 'ITEM' ? SHOP_CATEGORIES[itemCategory] : '스킬';
 
   return {
     activeTab,

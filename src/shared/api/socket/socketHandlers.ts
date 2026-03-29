@@ -15,10 +15,8 @@ export const handleLobbySend = (
 ) => {
   const responseMsg = {
     ...payload,
-
     id: Date.now().toString(),
     createdAt: new Date().toISOString(),
-
     senderId: 'test-user',
     nickname: '테스트유저',
   };
@@ -96,7 +94,7 @@ export const handleGameTyping = (socket: MockSocket, payload: any) => {
     socket.roomState.status === 'THEME_SELECTING' &&
     socket.roomState.phaseContext
   ) {
-    (socket.roomState.phaseContext as ThemeSelectingContext).value = value;
+    (socket.roomState.phaseContext as any).value = value;
   }
 
   socket['trigger'](SOCKET_EVENTS.GAME_TYPING_SHARE, { value });
@@ -107,6 +105,7 @@ export const handleGameThemeSubmit = (socket: MockSocket, payload: any) => {
 
   socket['roomState'].status = 'DRAWING';
   socket['roomState'].phaseContext = {
+    kind: 'DRAWING',    
     currentTheme: theme,
   };
 
@@ -117,7 +116,7 @@ export const handleGameThemeSubmit = (socket: MockSocket, payload: any) => {
 };
 
 export const handleGameThemeAutoSelect = (socket: MockSocket) => {
-  const context = socket.roomState.phaseContext as ThemeSelectingContext | null;
+  const context = socket.roomState.phaseContext as (ThemeSelectingContext & { value?: string }) | null;
   const savedInput = context?.value || '';
 
   let selectedTheme = savedInput;
@@ -129,6 +128,7 @@ export const handleGameThemeAutoSelect = (socket: MockSocket) => {
 
   socket['roomState'].status = 'DRAWING';
   socket['roomState'].phaseContext = {
+    kind: 'DRAWING',       // 추가
     currentTheme: selectedTheme,
   };
 

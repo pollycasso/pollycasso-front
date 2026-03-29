@@ -12,7 +12,7 @@ export const GameChat = () => {
         messages={state.messages}
         messageListRef={messageListRef}
         className="flex-1 p-4 h-full text-white"
-        currentUserId={state.myUserId}
+        currentUserId={state.myUserId ? String(state.myUserId) : undefined}
       />
 
       <div className="flex gap-2 items-center border-t border-white/10">
@@ -21,10 +21,12 @@ export const GameChat = () => {
             value={state.input}
             onChange={actions.setInput}
             onKeyDown={actions.handleKeyDown}
-            setIsComposing={actions.setIsComposing}
             placeholder="채팅 입력..."
             className="w-full text-base text-black placeholder-gray-500"
-          />
+            friends={[]}
+          >
+            {[]}
+          </ChatInput>
           <ChatSendButton
             disabled={!state.input.trim()}
             onSend={actions.handleSendMessage}

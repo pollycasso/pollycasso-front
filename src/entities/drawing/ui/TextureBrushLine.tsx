@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { Shape } from 'react-konva';
 import type { Context } from 'konva/lib/Context';
-import type { Shape as KonvaShape } from 'konva/lib/Shape';
 
 import { createTintedBrush, getDistance } from '../utils/brushUtils';
 
@@ -25,12 +24,11 @@ export const TextureBrushLine = ({
   }, [textureImage, color]);
 
   const drawTextureStroke = useCallback(
-    (context: Context, shape: KonvaShape) => {
+    (context: Context) => {
       if (!tintedBrush || points.length < 4) return;
 
-      const ctx = context.canvas.getContext(
-        '2d',
-      ) as unknown as CanvasRenderingContext2D;
+      const ctx =
+        context.canvas.getContext() as unknown as CanvasRenderingContext2D;
       if (!ctx) return;
 
       const stampSpacing = Math.max(size * spacing, 1);

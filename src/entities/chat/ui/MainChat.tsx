@@ -28,7 +28,7 @@ export const MainChat = () => {
       <MessageList
         messages={messages}
         messageListRef={messageListRef}
-        currentUserId={currentUserId}
+        currentUserId={currentUserId ? String(currentUserId) : undefined}
         showChannelTag={true}
       />
 
@@ -46,7 +46,9 @@ export const MainChat = () => {
           onKeyDown={handleKeyDown}
           friends={filteredFriends}
           className="w-4/5 mr-2 text-base text-black placeholder-gray-500"
-        />
+        >
+          {[]}
+        </ChatInput>
 
         <ChatSendButton disabled={disableSend} onSend={sendMessage} />
       </div>
