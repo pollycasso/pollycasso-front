@@ -1,8 +1,8 @@
 ---
 name: 문서 작업 이슈
-about: '📃 README, 개발 문서, 규칙 정리 등 문서 관련 작업에 대해 간결하게 설명해주세요.'
+about: '📘 README, 개발 문서, 규칙 정리 등 문서 관련 작업에 대해 간결하게 설명해주세요.'
 title: 'README, 개발 문서, 규칙 정리 등 문서 관련 작업'
-labels: 📃 docs
+labels: 📘 docs
 assignees: ''
 ---
 

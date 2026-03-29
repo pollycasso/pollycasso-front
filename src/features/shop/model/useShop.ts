@@ -47,7 +47,7 @@ export const useShop = () => {
     onSuccess: (data) => {
       clearCart();
       if (data?.remainingCoins !== undefined) {
-        updateUser({ coin: data.remainingCoins });
+        updateUser({ coins: data.remainingCoins });
       }
       queryClient.invalidateQueries({ queryKey: shopQueries.all() });
     },

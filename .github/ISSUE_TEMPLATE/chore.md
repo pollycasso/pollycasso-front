@@ -1,8 +1,8 @@
 ---
 name: 유지보수 및 설정 변경 이슈
-about: '⚙ 유지보수 및 설정 변경 작업에 대해 간결하게 설명해주세요.'
+about: '🏠 유지보수 및 설정 변경 작업에 대해 간결하게 설명해주세요.'
 title: '유지보수 및 설정 변경'
-labels: ⚙ chore
+labels: 🏠 chore
 assignees: ''
 ---
 

@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
 import { useAuthStore } from '@/entities/user';
+import type { User } from '@/entities/user';
 import { postRefreshToken } from '@/features/auth';
 import { instance } from '@/shared/api';
 import { parseAccessToken } from '@/shared/lib';
@@ -49,8 +50,15 @@ export const setupAxiosInterceptors = () => {
             const newAccessToken = res.data.content;
             const decoded = parseAccessToken(newAccessToken);
 
+            const currentUser = useAuthStore.getState().user;
+            
             useAuthStore.getState().setAuth({
-              user: { id: decoded.sub, nickname: decoded.nickname },
+              user: { 
+                ...(currentUser || {}), 
+                id: decoded.sub, 
+                nickname: decoded.nickname, 
+                tag: String(decoded.tag || '0000') 
+              } as User,
               accessToken: newAccessToken,
             });
 

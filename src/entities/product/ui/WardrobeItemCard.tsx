@@ -4,20 +4,27 @@ import { getShopItemUrl } from '@/shared/lib/assets';
 
 interface WardrobeItemCardProps {
   product: Product;
-  isEquipped: boolean;
-  onWear: (product: Product) => void;
+  isEquipped?: boolean;
+  onWear?: (product: Product) => void;
+  quantity?: number;
 }
 
 export const WardrobeItemCard = ({
   product,
-  isEquipped,
+  isEquipped = false,
   onWear,
+  quantity,
 }: WardrobeItemCardProps) => {
+  const isConsumable = quantity !== undefined;
+
   return (
     <div
-      onClick={() => onWear(product)}
+      onClick={() => {
+        if (!isConsumable && onWear) onWear(product);
+      }}
       className={cn(
-        'flex flex-col items-center justify-between w-[240px] h-[350px] rounded-[20px] p-5 cursor-pointer transition-all border-2',
+        'flex flex-col items-center justify-between w-[240px] h-[350px] rounded-[20px] p-5 transition-all border-2',
+        !isConsumable ? 'cursor-pointer' : '',
         isEquipped
           ? 'bg-white border-[#52D843] shadow-[0_0_15px_rgba(82,216,67,0.4)]'
           : 'bg-white border-transparent hover:scale-[1.02]',
@@ -44,10 +51,10 @@ export const WardrobeItemCard = ({
       <div
         className={cn(
           'flex justify-center items-center w-full h-[45px] rounded-lg text-xl font-bold text-white pt-1',
-          isEquipped ? 'bg-[#52D843]' : 'bg-black',
+          isConsumable ? 'bg-[#5697FF]' : isEquipped ? 'bg-[#52D843]' : 'bg-black',
         )}
       >
-        {isEquipped ? '착용중' : '착용하기'}
+        {isConsumable ? `수량: ${quantity}개` : isEquipped ? '착용중' : '착용하기'}
       </div>
     </div>
   );
