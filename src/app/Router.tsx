@@ -49,7 +49,17 @@ const router = createBrowserRouter([
               { path: '/wardrobe', element: <WardrobePage /> },
               { path: '/ranking', element: <RankingPage /> },
               { path: '/mypage', element: <MyPage /> },
-              { path: '/dev/gameWidget', element: <GameWidget /> },
+              {
+                path: '/dev/gameWidget',
+                element: (
+                  <GameWidget
+                    phase="WAITING"
+                    endsAt={0}
+                    phaseContext={null}
+                    playerMap={{}}
+                  />
+                ),
+              },
               {
                 path: '/rooms/:roomId',
                 element: (

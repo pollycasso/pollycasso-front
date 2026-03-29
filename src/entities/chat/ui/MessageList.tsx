@@ -1,5 +1,4 @@
 import type { RefObject } from 'react';
-
 import { cn } from '@/shared/lib';
 import type { ChatMessage } from '@/shared/model';
 import { MessageItem } from './MessageItem';
@@ -8,7 +7,7 @@ interface MessageListProps {
   messages: ChatMessage[];
   messageListRef: RefObject<HTMLDivElement | null>;
   className?: string;
-  currentUserId?: number | string;
+  currentUserId?: string; 
   showChannelTag?: boolean;
 }
 

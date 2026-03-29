@@ -25,6 +25,7 @@ export interface Player {
   outfit: Outfit;
   status: WaitingStatus;
   teamId: string | null;
+  team: 'BLUE' | 'RED' | 'NONE';
 
   isConnected: boolean;
   isReady: boolean;

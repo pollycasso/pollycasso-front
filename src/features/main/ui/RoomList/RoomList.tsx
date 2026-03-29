@@ -61,7 +61,11 @@ export const RoomList = ({ onEnter, onMenu }: Props) => {
       "
     >
       {isLoading ? (
-        <Spinner transparent={true} message="방 목록을 불러오는 중..." />
+        <Spinner
+          transparent={true}
+          message="방 목록을 불러오는 중..."
+          size="xl"
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-y-5 gap-x-2 text-3xl">

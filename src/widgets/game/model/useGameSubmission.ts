@@ -17,7 +17,6 @@ interface GameSubmissionState {
 export const useGameSubmission = (): GameSubmissionState => {
   const { gameSocket } = useGameSocket();
   const user = useAuthStore((state) => state.user);
-
   const { players } = useGameState();
 
   const totalCount = players.length;
@@ -28,12 +27,11 @@ export const useGameSubmission = (): GameSubmissionState => {
 
   const isMeReady = useMemo(() => {
     if (!user) return false;
-    return players.find((p) => p.userId === user.id)?.isReady ?? false;
+    return players.find((p) => String(p.userId) === String(user.id))?.isReady ?? false;
   }, [players, user]);
 
   const toggleReady = useCallback(() => {
     if (!gameSocket) return;
-
     gameSocket.emit(SOCKET_EVENTS.ROOM_READY_TOGGLE);
   }, [gameSocket]);
 

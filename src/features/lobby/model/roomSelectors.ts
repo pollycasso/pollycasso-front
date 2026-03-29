@@ -11,10 +11,11 @@ export const selectMe = (state: RoomState | null, myId: string | number) =>
  * 2. 팀별 플레이어 분류
  * 필드명을 teamId -> team으로 맞추고, NONE 상태인 유저도 관리합니다.
  */
+import type { Player } from '@/shared/model/player';
 export const selectTeams = (state: RoomState | null) => ({
-  blue: state?.players.filter((p) => p.team === 'BLUE') ?? [],
-  red: state?.players.filter((p) => p.team === 'RED') ?? [],
-  none: state?.players.filter((p) => p.team === 'NONE') ?? [],
+  blue: state?.players.filter((p: Player) => p.team === 'BLUE') ?? [],
+  red: state?.players.filter((p: Player) => p.team === 'RED') ?? [],
+  none: state?.players.filter((p: Player) => p.team === 'NONE') ?? [],
 });
 
 /**

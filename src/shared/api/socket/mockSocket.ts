@@ -1,12 +1,4 @@
-import {
-  handleFriendAccept,
-  handleFriendBlock,
-  handleFriendDelete,
-  handleFriendGetList,
-  handleFriendGetRecommended,
-  handleFriendRequestSend,
-  handleFriendSearch,
-} from '@/mocks/friend.mock';
+// (friend.mock import 제거)
 import { MOCK_GAME_SELECTING } from '@/mocks/game.mock';
 import { SOCKET_EVENTS } from '@/shared/api/socket';
 import type { RoomState } from '@/shared/model';
@@ -148,36 +140,38 @@ export class MockSocket {
         handleGameThemeSubmit(this, payload);
         break;
 
-      case SOCKET_EVENTS.FRIEND_GET_ALL:
-        handleFriendGetList(this);
-        break;
+      // case SOCKET_EVENTS.FRIEND_GET_ALL:
+      //   handleFriendGetList(this);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_GET_RECOMMENDED:
-        handleFriendGetRecommended(this);
-        break;
+      // case SOCKET_EVENTS.FRIEND_GET_RECOMMENDED:
+      //   handleFriendGetRecommended(this);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_REQUEST_SEND:
-        handleFriendRequestSend(this, payload);
-        break;
+      // case SOCKET_EVENTS.FRIEND_REQUEST_SEND:
+      //   handleFriendRequestSend(this, payload);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_ACCEPT:
-        handleFriendAccept(this, payload);
-        break;
+      // case SOCKET_EVENTS.FRIEND_ACCEPT:
+      //   handleFriendAccept(this, payload);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_REJECT:
-        handleFriendDelete(this, payload);
-        break;
+      // case SOCKET_EVENTS.FRIEND_REJECT:
+      //   handleFriendDelete(this, payload);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_BLOCK:
-        handleFriendBlock(this, payload);
-        break;
+      // case SOCKET_EVENTS.FRIEND_BLOCK:
+      //   handleFriendBlock(this, payload);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_DELETE:
-        handleFriendDelete(this, payload);
-        break;
+      // case SOCKET_EVENTS.FRIEND_DELETE:
+      //   handleFriendDelete(this, payload);
+      //   break;
 
-      case SOCKET_EVENTS.FRIEND_SEARCH:
-        handleFriendSearch(this, payload);
+      // case SOCKET_EVENTS.FRIEND_SEARCH:
+      //   handleFriendSearch(this, payload);
+      //   break;
+
       case SOCKET_EVENTS.GAME_USE_ITEM:
         handleGameUseItem(this, payload);
         break;

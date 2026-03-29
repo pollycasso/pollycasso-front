@@ -11,6 +11,7 @@ export const DRAWING_TOOLS = [
   { id: 'brush', Icon: 'PaintBrushIcon', label: '브러시' },
   { id: 'neon', Icon: 'SparklesIcon', label: '네온' },
   { id: 'bucket', Icon: 'BeakerIcon', label: '채우기' },
+  { id: 'eraser', Icon: 'BeakerIcon', label: '지우개' }, // 임시 아이콘
 ] as const;
 
 export const DRAWING_COLORS = [
