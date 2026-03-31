@@ -14,41 +14,38 @@ import { EvaluatingPhase } from '@/features/game-evaluating';
 import { RoundSummaryPhase } from '@/features/game-round-summary';
 import { FinishedPhase } from '@/features/game-finished';
 import { PHASE_TIME } from '@/shared/model';
-import type { PhaseContext, RoomStatus } from '@/shared/model';
 import { useGameState } from '../model/useGameState';
 import { useGameSubmission } from '../model/useGameSubmission';
 import { useThemeInput } from '../model/useThemeInput';
-// import { useThemeSelecting } from '../model/useThemeSelecting';
 import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import { SOCKET_EVENTS } from '@/shared/api/socket';
 
 interface GameWidgetProps {
-  phase: RoomStatus;
-  endsAt: number | null;
-  phaseContext: PhaseContext | null;
   playerMap: Record<string, number>;
 }
 
-const GameWidget = ({
-  phase,
-  endsAt,
-  phaseContext,
-  playerMap,
-}: GameWidgetProps) => {
-  const { players, inventory, currentTheme } = useGameState();
+const GameWidget = ({ playerMap }: GameWidgetProps) => {
+  const {
+    status: phase,
+    players,
+    endsAt,
+    phaseContext,
+    inventory,
+    currentTheme,
+    isMeReady,
+  } = useGameState();
+
   const { gameSocket } = useGameSocket();
   const { user } = useAuthStore();
 
-  const { completedCount, totalCount, isMeReady, toggleReady } =
-    useGameSubmission();
+  const { completedCount, totalCount, toggleReady } = useGameSubmission();
 
   const syncedPlayers = useMemo(() => {
     if (!players) return [];
 
     return players.map((player) => ({
       ...player,
-      // playerMap에 내 userId(문자열)가 있으면 해당 roomMemberId를 꽂아줌
-      roomMemberId: playerMap[player.userId] || null,
+      roomMemberId: playerMap[String(player.userId)] || null,
     }));
   }, [players, playerMap]);
 
@@ -65,13 +62,16 @@ const GameWidget = ({
   const handleComplete = useCallback(() => {
     if (phase === 'THEME_SELECTING') {
       if (!isMyTurn) return;
+
       if (!localInput.trim()) {
         alert('주제를 입력해주세요!');
         return;
       }
+
       gameSocket?.emit(SOCKET_EVENTS.GAME_FINALIZE, { value: localInput });
       return;
     }
+
     toggleReady();
   }, [phase, isMyTurn, localInput, gameSocket, toggleReady]);
 
@@ -91,6 +91,12 @@ const GameWidget = ({
         return PHASE_TIME.DEFAULT;
     }
   }, [phase]);
+
+  const isSubmitDisabled = useMemo(() => {
+    if (phase !== 'THEME_SELECTING') return false;
+    if (!isMyTurn) return true;
+    return !localInput.trim();
+  }, [phase, isMyTurn, localInput]);
 
   const renderGameContent = () => {
     switch (phase) {
@@ -122,10 +128,10 @@ const GameWidget = ({
   };
 
   return (
-    <div className="w-full h-screen flex justify-between items-center font-ssrm px-20 py-4 overflow-hidden gap-16">
+    <div className="flex h-screen w-full items-center justify-between gap-16 overflow-hidden px-20 py-4 font-ssrm">
       <PlayerSidebar players={syncedPlayers} currentUserId={user?.id || ''} />
 
-      <main className="w-full h-full rounded-3xl bg-white shadow-xl flex flex-col relative overflow-hidden">
+      <main className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
         <GameTimer
           endsAt={endsAt}
           totalTime={totalTime}
@@ -134,19 +140,20 @@ const GameWidget = ({
 
         <GameHeader currentTheme={currentTheme} />
 
-        <div className="flex-1 flex justify-center bg-white pt-0 items-start relative">
+        <div className="relative flex flex-1 items-start justify-center bg-white pt-0">
           {renderGameContent()}
         </div>
       </main>
 
-      <aside className="h-full flex flex-col justify-center gap-y-20">
+      <aside className="flex h-full flex-col justify-center gap-y-20">
         <InventoryPanel inventory={inventory} />
         <GameSubmitButton
           onComplete={handleComplete}
           completedCount={completedCount}
           totalCount={totalCount}
-          isReady={isMeReady}
+          isReady={phase === 'THEME_SELECTING' ? false : isMeReady}
           showBadge={phase !== 'THEME_SELECTING'}
+          disabled={isSubmitDisabled}
         />
       </aside>
     </div>

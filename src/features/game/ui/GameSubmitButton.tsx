@@ -7,6 +7,7 @@ interface GameSubmitButtonProps {
   totalCount: number;
   isReady: boolean;
   showBadge?: boolean;
+  disabled?: boolean;
 }
 
 export const GameSubmitButton = ({
@@ -15,12 +16,13 @@ export const GameSubmitButton = ({
   totalCount,
   isReady,
   showBadge = true,
+  disabled = false,
 }: GameSubmitButtonProps) => {
   return (
-    <div className="relative w-full mt-4">
+    <div className="relative mt-4 w-full">
       {showBadge && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 -top-8 px-6 py-2 rounded-t-xl text-white font-bold text-sm shadow-md flex items-center justify-center z-0 whitespace-nowrap"
+          className="absolute top-[-2rem] left-1/2 z-0 flex -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-t-xl px-6 py-2 text-sm font-bold text-white shadow-md"
           style={{ backgroundColor: COLORS.BADGE_PINK }}
         >
           {completedCount}/{totalCount} 완료
@@ -28,10 +30,14 @@ export const GameSubmitButton = ({
       )}
 
       <button
+        type="button"
         onClick={onComplete}
+        disabled={disabled}
         className={cn(
-          'relative z-10 w-[110%] -left-[5%] h-16 rounded-full text-2xl font-extrabold shadow-lg',
-          'hover:brightness-95 transition-all active:scale-95',
+          'relative z-10 h-16 w-[110%] -left-[5%] rounded-full text-2xl font-extrabold shadow-lg transition-all',
+          disabled
+            ? 'cursor-not-allowed opacity-50'
+            : 'hover:brightness-95 active:scale-95',
           isReady ? 'text-white' : 'bg-white text-black',
         )}
         style={{
