@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/entities/user';
-import type { DrawingContext, Player } from '@/shared/model';
+import type { DrawingContext, EvaluatingContext, Player } from '@/shared/model';
 import { useRoomStore } from '@/shared/model/roomStore';
 
 export const useGameState = () => {
@@ -24,11 +24,17 @@ export const useGameState = () => {
     return context?.currentTheme ?? null;
   }, [status, phaseContext]);
 
+  const evaluatingContext = useMemo(() => {
+    if (phaseContext?.kind !== 'EVALUATING') return null;
+    return phaseContext as EvaluatingContext;
+  }, [phaseContext]);
+
   return {
     status,
     players,
     endsAt,
     phaseContext,
+    evaluatingContext,
     inventory,
     currentTheme,
     isMeReady,
