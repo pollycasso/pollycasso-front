@@ -1,8 +1,7 @@
 import { useState } from 'react';
 
+import { CDN_BASE_URL } from '@/shared/lib/cdn';
 import { cn } from '@/shared/lib';
-
-const CDN_BASE_URL = 'https://your-cdn-url.com';
 
 export interface ItemIconProps {
   id: string | number;

@@ -54,6 +54,14 @@ export const PlayerSidebar = ({
     });
   };
 
+  const hasOutfitObject = (value: unknown) => {
+    return (
+      !!value &&
+      typeof value === 'object' &&
+      Object.keys(value as Record<string, unknown>).length > 0
+    );
+  };
+
   return (
     <aside
       className="py-16 px-6 w-auto h-auto rounded-2xl flex flex-col gap-6 justify-center min-w-[120px]"
@@ -61,6 +69,19 @@ export const PlayerSidebar = ({
     >
       {players.map((player) => {
         const isMe = player.userId === currentUserId;
+        const outfitCandidate =
+          hasOutfitObject(player.outfit) ? player.outfit : null;
+
+        const fallbackOutfit =
+          outfitCandidate ||
+          (player as any).user?.outfit ||
+          (player as any).userOutfit ||
+          (player as any).memberOutfit ||
+          (player as any).costume ||
+          (player as any).costumeData ||
+          (player as any).appearance ||
+          (player as any).appearanceData ||
+          null;
 
         return (
           <div
@@ -81,6 +102,7 @@ export const PlayerSidebar = ({
                 nickname={player.nickname}
                 level={player.level}
                 isConnected={player.isConnected}
+                outfit={fallbackOutfit}
               />
             </div>
           </div>
