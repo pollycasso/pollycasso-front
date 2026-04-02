@@ -49,10 +49,16 @@
 <table>
   <tr>
     <td align="center">
-      <img src="https://github.com/electrohyun.png" width="200"/><br/>
-      정기현<br>
-      <strong>Electrohyun</strong><br>
-      <a href="https://github.com/electrohyun">@electrohyun</a>
+       <img src="https://github.com/yxxjxxeee.png" width="200"/><br/>
+      윤지은<br>
+      <strong>younjieun</strong><br>
+      <a href="https://github.com/yxxjxxeee">@yxxjxxeee</a>
+    </td>
+    <td align="center">
+      <img src="https://github.com/dlehdhun.png" width="200"/><br/>
+      이동훈<br>
+      <strong>dlehdhun</strong><br>
+      <a href="https://github.com/dlehdhun">@dlehdhun</a>
     </td>
   </tr>
 </table>
@@ -62,18 +68,6 @@
 <table>
   <tr>
     <td align="center">
-      <img src="https://github.com/yxxjxxeee.png" width="200"/><br/>
-      younjieun<br>
-      <strong>Back-End</strong><br>
-      <a href="https://github.com/yxxjxxeee">@yxxjxxeee</a>
-    </td>
-    <td align="center">
-      <img src="https://github.com/dlehdhun.png" width="200"/><br/>
-      dlehdgns<br>
-      <strong>Back-End</strong><br>
-      <a href="https://github.com/dlehdhun">@dlehdhun</a>
-    </td>
-    <td align="center">
       <img src="https://github.com/seohyunlim.png" width="200"/><br/>
       임서현<br>
       <strong>Designer</strong><br>
@@ -81,7 +75,7 @@
     </td>
     <td align="center">
       <img src="https://github.com/kimjisue05.png" width="200"/><br/>
-      kimjisue<br>
+      김지수<br>
       <strong>Designer</strong><br>
       <a href="https://github.com/kimjisue05">@kimjisue05</a>
     </td>
