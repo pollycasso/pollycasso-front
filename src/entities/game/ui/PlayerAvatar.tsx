@@ -111,7 +111,8 @@ const normalizeOutfit = (outfit?: unknown): Outfit => {
         else if (lower.includes('acc') || lower.includes('accessory')) {
           next.accessory = item;
         } else if (lower.includes('hat')) next.hat = item;
-        else if (lower.includes('top') || lower.includes('shirt')) next.top = item;
+        else if (lower.includes('top') || lower.includes('shirt'))
+          next.top = item;
         else if (lower.includes('bottom') || lower.includes('pants')) {
           next.bottom = item;
         } else if (lower.includes('shoe')) next.shoes = item;
@@ -122,7 +123,11 @@ const normalizeOutfit = (outfit?: unknown): Outfit => {
       if (typeof item === 'object') {
         const source = item as Record<string, unknown>;
         const category = String(
-          source.subCategory || source.category || source.type || source.kind || '',
+          source.subCategory ||
+            source.category ||
+            source.type ||
+            source.kind ||
+            '',
         ).toUpperCase();
         const image = toOutfitValue(item);
         if (!image) return;
