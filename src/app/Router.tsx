@@ -52,12 +52,7 @@ const router = createBrowserRouter([
               {
                 path: '/dev/gameWidget',
                 element: (
-                  <GameWidget
-                    phase="WAITING"
-                    endsAt={0}
-                    phaseContext={null}
-                    playerMap={{}}
-                  />
+                  <GameWidget playerMap={{}} />
                 ),
               },
               {

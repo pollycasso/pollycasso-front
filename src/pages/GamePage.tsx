@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useWaitingSocket } from '@/shared/api/socket/WaitingSocketProvider';
 import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import type { PhaseContext, RoomState, RoomStatus } from '@/shared/model';
+import { useRoomStore } from '@/shared/model/roomStore';
 import { GameWidget } from '@/widgets/game';
 import { LoadingWidget } from '@/widgets/loading';
 import { RoomWidget } from '@/widgets/waiting';
@@ -22,19 +23,19 @@ const GamePage = () => {
   const { waitingSocket } = useWaitingSocket();
   const { gameSocket } = useGameSocket();
 
-  const [roomStatus, setRoomStatus] = useState<RoomStatus>('WAITING');
-
-  const [endsAt, setEndsAt] = useState<number | null>(null);
-  const [phaseContext, setPhaseContext] = useState<PhaseContext | null>(null);
+  const roomState = useRoomStore((state) => state.roomState);
+  const setRoomState = useRoomStore((state) => state.setRoomState);
 
   const [playerMap, setPlayerMap] = useState<Record<string, number>>({});
+
+  const { status, endsAt } = roomState;
 
   useEffect(() => {
     if (!waitingSocket) return;
 
     interface UpdateGameStatePayload {
       phase: RoomStatus;
-      phaseContext: PhaseContext;
+      phaseContext: PhaseContext | null;
       endsAt: number | null;
       roomMemberIdByUserId?: Record<string, number>;
     }
@@ -45,8 +46,11 @@ const GamePage = () => {
       const nextStatus = payload.status;
       const nextEndsAt = payload.endsAt ?? null;
 
-      setEndsAt(nextEndsAt);
-      setRoomStatus(nextStatus);
+      setRoomState((prev) => ({
+        ...prev,
+        status: nextStatus,
+        endsAt: nextEndsAt,
+      }));
 
       if (gameSocket && roomId) {
         gameSocket.emit('game:join', { roomId: Number(roomId) });
@@ -56,9 +60,22 @@ const GamePage = () => {
     const syncPhase = (payload: UpdateGameStatePayload) => {
       if (!payload?.phase) return;
 
-      setRoomStatus(payload.phase);
-      setEndsAt(payload.endsAt ?? null);
-      setPhaseContext(payload.phaseContext ?? null);
+      setRoomState((prev) => {
+        const isPhaseChanged = prev.status !== payload.phase;
+
+        return {
+          ...prev,
+          status: payload.phase,
+          endsAt: payload.endsAt ?? null,
+          phaseContext: payload.phaseContext ?? null,
+          players: isPhaseChanged
+            ? prev.players.map((player) => ({
+              ...player,
+              isReady: false,
+            }))
+            : prev.players,
+        };
+      });
 
       if (payload.roomMemberIdByUserId) {
         setPlayerMap(payload.roomMemberIdByUserId);
@@ -69,31 +86,29 @@ const GamePage = () => {
     waitingSocket.on('room:stateSync', syncStatus);
     waitingSocket.on('room:updateGameState', syncPhase);
 
-    if (gameSocket) gameSocket.on('room:updateGameState', syncPhase);
+    if (gameSocket) {
+      gameSocket.on('room:updateGameState', syncPhase);
+    }
 
     return () => {
       waitingSocket.off('room:joinSuccess', syncStatus);
       waitingSocket.off('room:stateSync', syncStatus);
       waitingSocket.off('room:updateGameState', syncPhase);
-      if (gameSocket) gameSocket.off('room:updateGameState', syncPhase);
+
+      if (gameSocket) {
+        gameSocket.off('room:updateGameState', syncPhase);
+      }
     };
-  }, [waitingSocket, gameSocket, roomId]);
+  }, [waitingSocket, gameSocket, roomId, setRoomState]);
 
   let widget = <LoadingWidget endsAt={endsAt} />;
 
-  if (roomStatus === 'WAITING') {
+  if (status === 'WAITING') {
     widget = <RoomWidget />;
-  } else if (roomStatus === 'LOADING') {
+  } else if (status === 'LOADING') {
     widget = <LoadingWidget endsAt={endsAt} />;
-  } else if (GAME_PHASE_STATUSES.includes(roomStatus)) {
-    widget = (
-      <GameWidget
-        phase={roomStatus}
-        endsAt={endsAt}
-        phaseContext={phaseContext}
-        playerMap={playerMap}
-      />
-    );
+  } else if (GAME_PHASE_STATUSES.includes(status)) {
+    widget = <GameWidget playerMap={playerMap} />;
   }
 
   const handleEmergencyLeave = () => {
