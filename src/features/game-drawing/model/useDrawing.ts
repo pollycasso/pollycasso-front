@@ -8,16 +8,23 @@ interface UseDrawingProps {
   tool: DrawLine['tool'];
   color: string;
   size: number;
+  onLineComplete?: (line: DrawLine) => void;
 }
 
 const SCALE_FACTOR = 0.25;
 
-export const useDrawing = ({ tool, color, size }: UseDrawingProps) => {
+export const useDrawing = ({
+  tool,
+  color,
+  size,
+  onLineComplete,
+}: UseDrawingProps) => {
   const [lines, setLines] = useState<DrawLine[]>([]);
   const [redoStack, setRedoStack] = useState<DrawLine[]>([]);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const isDrawingRef = useRef(false);
+  const currentLineRef = useRef<DrawLine | null>(null);
 
   const undo = useCallback(() => {
     if (lines.length === 0 || isDrawingRef.current) return;
@@ -102,16 +109,22 @@ export const useDrawing = ({ tool, color, size }: UseDrawingProps) => {
         );
 
         if (filledImage) {
+          const completedLine: DrawLine = {
+            tool: 'bucket',
+            color,
+            size: 0,
+            points: [pos.x, pos.y],
+          };
+
           setLines((prev) => [
             ...prev,
             {
-              tool: 'bucket',
-              color,
-              size: 0,
-              points: [0, 0],
+              ...completedLine,
               filledImage,
             },
           ]);
+
+          onLineComplete?.(completedLine);
         }
         return;
       }
@@ -119,17 +132,21 @@ export const useDrawing = ({ tool, color, size }: UseDrawingProps) => {
       isDrawingRef.current = true;
       setIsDrawing(true);
 
+      const newLine: DrawLine = {
+        tool,
+        color: tool === 'eraser' ? '#000000' : color,
+        size: size * SCALE_FACTOR,
+        points: [pos.x, pos.y],
+      };
+
+      currentLineRef.current = newLine;
+
       setLines((prev) => [
         ...prev,
-        {
-          tool,
-          color: tool === 'eraser' ? '#000000' : color,
-          size: size * SCALE_FACTOR,
-          points: [pos.x, pos.y],
-        },
+        newLine,
       ]);
     },
-    [tool, color, size],
+    [tool, color, size, onLineComplete],
   );
 
   const handleMove = useCallback(
@@ -151,6 +168,8 @@ export const useDrawing = ({ tool, color, size }: UseDrawingProps) => {
           points: [...last.points, point.x, point.y],
         };
 
+        currentLineRef.current = updatedLast;
+
         return [...prev.slice(0, -1), updatedLast];
       });
     },
@@ -158,11 +177,17 @@ export const useDrawing = ({ tool, color, size }: UseDrawingProps) => {
   );
 
   const handleUp = useCallback(() => {
+    if (currentLineRef.current) {
+      onLineComplete?.(currentLineRef.current);
+    }
+
+    currentLineRef.current = null;
     isDrawingRef.current = false;
     setIsDrawing(false);
-  }, []);
+  }, [onLineComplete]);
 
   const clearCanvas = useCallback(() => {
+    currentLineRef.current = null;
     setLines([]);
     setRedoStack([]);
   }, []);

@@ -38,7 +38,8 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
   const { gameSocket } = useGameSocket();
   const { user } = useAuthStore();
 
-  const { completedCount, totalCount, toggleReady } = useGameSubmission();
+  const { completedCount, totalCount, isSubmitting, submitDrawing } =
+    useGameSubmission();
 
   const syncedPlayers = useMemo(() => {
     if (!players) return [];
@@ -72,8 +73,8 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
       return;
     }
 
-    toggleReady();
-  }, [phase, isMyTurn, localInput, gameSocket, toggleReady]);
+    submitDrawing();
+  }, [phase, isMyTurn, localInput, gameSocket, submitDrawing]);
 
   const totalTime = useMemo(() => {
     switch (phase) {
@@ -93,10 +94,17 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
   }, [phase]);
 
   const isSubmitDisabled = useMemo(() => {
-    if (phase !== 'THEME_SELECTING') return false;
-    if (!isMyTurn) return true;
-    return !localInput.trim();
-  }, [phase, isMyTurn, localInput]);
+    if (phase === 'THEME_SELECTING') {
+      if (!isMyTurn) return true;
+      return !localInput.trim();
+    }
+
+    if (phase === 'DRAWING') {
+      return isMeReady || isSubmitting;
+    }
+
+    return false;
+  }, [phase, isMyTurn, localInput, isMeReady, isSubmitting]);
 
   const renderGameContent = () => {
     switch (phase) {

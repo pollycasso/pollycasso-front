@@ -4,7 +4,7 @@ export interface Point {
 }
 
 export interface Line {
-  tool: 'pen' | 'eraser';
+  tool: 'pencil' | 'brush' | 'neon' | 'bucket' | 'eraser';
   color: string;
   size: number;
   points: number[];
