@@ -17,9 +17,18 @@ export const SOCKET_EVENTS = {
   CHAT_NEW_MESSAGE: 'chat:newMessage',
 
   GAME_TYPING: 'game:typing',
+  GAME_JOIN: 'game:join',
+  GAME_JOINED: 'game:joined',
   GAME_TYPING_SHARE: 'game:shareTyping',
   GAME_FINALIZE: 'game:finalize',
+  GAME_THEME_CONFIRMED: 'game:themeConfirmed',
   GAME_THEME_SUBMIT: 'game:themeSubmit',
+  GAME_SEND_DRAWING: 'game:sendDrawing',
+  GAME_SUBMIT_DRAWING: 'game:submitDrawing',
+  GAME_START_EVALUATION: 'game:startEvaluation',
+  UPDATE_PLAYER: 'room:updatePlayer',
+  UPDATE_READY_SUMMARY: 'room:updateReadySummary',
+  SYSTEM_NOTIFICATION: 'system:notification',
 
   FRIEND_GET_ALL: 'friends:getList',
   FRIEND_GET_ALL_RESPONSE: 'friends:getList',
