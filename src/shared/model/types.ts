@@ -28,6 +28,6 @@ export interface SendMessageRequest {
 export interface SystemNotification {
   status: number;
   code: string;
-  errors?: { field: string; reason: string }[];
+  errors?: { field?: string; reason: string | string[] }[];
   message?: string;
 }
