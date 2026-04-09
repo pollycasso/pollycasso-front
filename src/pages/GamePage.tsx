@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { useWaitingSocket } from '@/shared/api/socket/WaitingSocketProvider';
@@ -51,15 +51,51 @@ const GamePage = () => {
   const setRoomState = useRoomStore((state) => state.setRoomState);
 
   const [playerMap, setPlayerMap] = useState<Record<string, number>>({});
+  const [waitingJoined, setWaitingJoined] = useState(false);
+  const [waitingRoomId, setWaitingRoomId] = useState<number | null>(null);
+  const [gameConnected, setGameConnected] = useState(Boolean(gameSocket?.connected));
+  const [gameJoinPending, setGameJoinPending] = useState(false);
+  const [gameJoinedRoomId, setGameJoinedRoomId] = useState<number | null>(null);
 
   const { status, endsAt } = roomState;
+  const targetRoomId = Number(roomId);
+  const hasValidTargetRoomId = Number.isFinite(targetRoomId);
 
-  const emitGameJoin = useCallback(() => {
-    if (!gameSocket || !roomId) return;
-    const numericRoomId = Number(roomId);
-    if (!Number.isFinite(numericRoomId)) return;
-    gameSocket.emit(SOCKET_EVENTS.GAME_JOIN, { roomId: numericRoomId });
-  }, [gameSocket, roomId]);
+  useEffect(() => {
+    setWaitingJoined(false);
+    setWaitingRoomId(null);
+    setGameJoinPending(false);
+    setGameJoinedRoomId(null);
+  }, [targetRoomId]);
+
+  useEffect(() => {
+    setGameConnected(Boolean(gameSocket?.connected));
+  }, [gameSocket]);
+
+  useEffect(() => {
+    if (!gameSocket || !hasValidTargetRoomId) return;
+
+    const canEmitGameJoin =
+      waitingJoined === true &&
+      waitingRoomId === targetRoomId &&
+      gameConnected === true &&
+      gameJoinPending !== true &&
+      gameJoinedRoomId !== targetRoomId;
+
+    if (!canEmitGameJoin) return;
+
+    setGameJoinPending(true);
+    gameSocket.emit(SOCKET_EVENTS.GAME_JOIN, { roomId: targetRoomId });
+  }, [
+    gameSocket,
+    gameConnected,
+    gameJoinPending,
+    gameJoinedRoomId,
+    hasValidTargetRoomId,
+    targetRoomId,
+    waitingJoined,
+    waitingRoomId,
+  ]);
 
   useEffect(() => {
     if (!waitingSocket && !gameSocket) return;
@@ -115,7 +151,14 @@ const GamePage = () => {
 
       // waiting 방 입장/동기화 완료 시점에 game 재조인하여
       // 소켓 연결 타이밍 레이스로 인한 조인 누락을 방지한다.
-      emitGameJoin();
+    };
+
+    const handleWaitingJoinSuccess = (
+      payload: Pick<RoomState, 'status' | 'endsAt'> & { roomId: number },
+    ) => {
+      syncStatus(payload);
+      setWaitingJoined(true);
+      setWaitingRoomId(payload.roomId);
     };
 
     const syncPhase = (payload: UpdateGameStatePayload) => {
@@ -178,16 +221,25 @@ const GamePage = () => {
     };
 
     const handleGameConnect = () => {
-      emitGameJoin();
+      setGameConnected(true);
+    };
+
+    const handleGameDisconnect = () => {
+      setGameConnected(false);
+      setGameJoinPending(false);
+      setGameJoinedRoomId(null);
     };
 
     const handleGameJoined = (payload: { roomId: number }) => {
-      if (String(payload.roomId) !== String(roomId)) {
-        emitGameJoin();
-      }
+      setGameJoinPending(false);
+      setGameJoinedRoomId(payload.roomId);
     };
 
     const handleGameNotification = (payload: SystemNotification) => {
+      if (payload.code === 'GAME_ACCESS_DENIED') {
+        setGameJoinPending(false);
+      }
+
       const firstReason = payload.errors?.[0]?.reason;
       const normalizedReason = Array.isArray(firstReason)
         ? firstReason[0]
@@ -247,27 +299,25 @@ const GamePage = () => {
       }));
     };
 
-    waitingSocket?.on('room:joinSuccess', syncStatus);
+    waitingSocket?.on('room:joinSuccess', handleWaitingJoinSuccess);
     waitingSocket?.on('room:stateSync', syncStatus);
     waitingSocket?.on('room:updateGameState', syncPhase);
 
     gameSocket?.on(SOCKET_EVENTS.CONNECT, handleGameConnect);
+    gameSocket?.on(SOCKET_EVENTS.DISCONNECT, handleGameDisconnect);
     gameSocket?.on(SOCKET_EVENTS.GAME_JOINED, handleGameJoined);
     gameSocket?.on(SOCKET_EVENTS.SYSTEM_NOTIFICATION, handleGameNotification);
     gameSocket?.on(SOCKET_EVENTS.GAME_START_EVALUATION, handleStartEvaluation);
     gameSocket?.on(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
     gameSocket?.on('room:updateGameState', syncPhase);
 
-    if (gameSocket?.connected) {
-      emitGameJoin();
-    }
-
     return () => {
-      waitingSocket?.off('room:joinSuccess', syncStatus);
+      waitingSocket?.off('room:joinSuccess', handleWaitingJoinSuccess);
       waitingSocket?.off('room:stateSync', syncStatus);
       waitingSocket?.off('room:updateGameState', syncPhase);
 
       gameSocket?.off(SOCKET_EVENTS.CONNECT, handleGameConnect);
+      gameSocket?.off(SOCKET_EVENTS.DISCONNECT, handleGameDisconnect);
       gameSocket?.off(SOCKET_EVENTS.GAME_JOINED, handleGameJoined);
       gameSocket?.off(
         SOCKET_EVENTS.SYSTEM_NOTIFICATION,
@@ -280,7 +330,14 @@ const GamePage = () => {
       gameSocket?.off(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
       gameSocket?.off('room:updateGameState', syncPhase);
     };
-  }, [waitingSocket, gameSocket, emitGameJoin, setRoomState, navigate]);
+  }, [
+    waitingSocket,
+    gameSocket,
+    setRoomState,
+    navigate,
+    hasValidTargetRoomId,
+    targetRoomId,
+  ]);
 
   let widget = <LoadingWidget endsAt={endsAt} />;
 
