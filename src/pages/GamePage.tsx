@@ -5,6 +5,7 @@ import { useWaitingSocket } from '@/shared/api/socket/WaitingSocketProvider';
 import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import { SOCKET_EVENTS } from '@/shared/api/socket';
 import type {
+  EvaluatingContext,
   PhaseContext,
   RoomState,
   RoomStatus,
@@ -29,6 +30,14 @@ const GAME_NOTIFICATION_MESSAGES: Record<string, string> = {
   GAME_CONTEXT_INVALID: '게임 컨텍스트가 유효하지 않습니다.',
   DRAWING_CONTEXT_MISSING: '드로잉 컨텍스트를 찾을 수 없습니다.',
   USER_NOT_ACTIVE: '현재 라운드의 활성 플레이어가 아닙니다.',
+  GAME_UNAUTHORIZED: '인증이 만료되었습니다. 다시 로그인해주세요.',
+  GAME_STATE_NOT_FOUND: '게임 상태를 찾을 수 없습니다. 방에 다시 입장해주세요.',
+  INVALID_PHASE: '현재 단계에서는 요청할 수 없습니다.',
+  EVALUATION_INCOMPLETE: '모든 그림을 평가해야 준비 완료할 수 있습니다.',
+  SELF_EVALUATION_NOT_ALLOWED: '자신의 그림은 평가할 수 없습니다.',
+  DRAWING_ID_INVALID: '유효하지 않은 그림입니다. 목록을 다시 확인해주세요.',
+  INVALID_SCORE: '점수는 0~10 사이 정수만 가능합니다.',
+  GAME_ACCESS_DENIED: '게임 참가 권한이 없습니다.',
 };
 
 type EvaluationLine = {
@@ -44,7 +53,7 @@ const GamePage = () => {
   const { waitingSocket } = useWaitingSocket();
   const { gameSocket } = useGameSocket();
   const pendingEvaluationDrawingsRef = useRef<
-    Record<string, { lines: EvaluationLine[] }> | null
+    EvaluatingContext['drawings'] | null
   >(null);
 
   const roomState = useRoomStore((state) => state.roomState);
@@ -137,6 +146,13 @@ const GamePage = () => {
       };
     }
 
+    interface UpdateReadySummaryPayload {
+      phase: 'DRAWING' | 'EVALUATING';
+      readyCount: number;
+      totalCount: number;
+      allReady: boolean;
+    }
+
     const syncStatus = (payload: Pick<RoomState, 'status' | 'endsAt'>) => {
       if (!payload?.status) return;
 
@@ -148,9 +164,6 @@ const GamePage = () => {
         status: nextStatus,
         endsAt: nextEndsAt,
       }));
-
-      // waiting 방 입장/동기화 완료 시점에 game 재조인하여
-      // 소켓 연결 타이밍 레이스로 인한 조인 누락을 방지한다.
     };
 
     const handleWaitingJoinSuccess = (
@@ -161,8 +174,44 @@ const GamePage = () => {
       setWaitingRoomId(payload.roomId);
     };
 
+    const buildEvaluatingContext = (
+      prevPhaseContext: PhaseContext,
+      nextPhaseContext?: PhaseContext | null,
+    ): EvaluatingContext => {
+      const prevEvaluatingContext =
+        prevPhaseContext?.kind === 'EVALUATING' ? prevPhaseContext : null;
+      const incomingEvaluatingContext =
+        nextPhaseContext?.kind === 'EVALUATING' ? nextPhaseContext : null;
+
+      return {
+        kind: 'EVALUATING',
+        activeUserIds:
+          incomingEvaluatingContext?.activeUserIds ??
+          prevEvaluatingContext?.activeUserIds ??
+          [],
+        readyUserIds:
+          incomingEvaluatingContext?.readyUserIds ??
+          prevEvaluatingContext?.readyUserIds ??
+          [],
+        drawings:
+          pendingEvaluationDrawingsRef.current ??
+          incomingEvaluatingContext?.drawings ??
+          prevEvaluatingContext?.drawings ??
+          {},
+        readySummary:
+          incomingEvaluatingContext?.readySummary ??
+          prevEvaluatingContext?.readySummary,
+      };
+    };
+
     const syncPhase = (payload: UpdateGameStatePayload) => {
       if (!payload?.phase) return;
+      if (import.meta.env.DEV) {
+        console.log('[room:updateGameState]', payload);
+      }
+      if (payload.phase !== 'EVALUATING') {
+        pendingEvaluationDrawingsRef.current = null;
+      }
 
       setRoomState((prev) => {
         const isPhaseChanged = prev.status !== payload.phase;
@@ -197,20 +246,15 @@ const GamePage = () => {
           status: payload.phase,
           endsAt: payload.endsAt ?? null,
           phaseContext:
-            payload.phaseContext ??
-            (payload.phase === 'EVALUATING' &&
-            pendingEvaluationDrawingsRef.current
-              ? {
-                  kind: 'EVALUATING' as const,
-                  drawings: pendingEvaluationDrawingsRef.current,
-                }
-              : null) ??
-            (payload.phase === 'DRAWING' && payload.currentTheme
-              ? {
-                  kind: 'DRAWING' as const,
-                  currentTheme: payload.currentTheme,
-                }
-              : prev.phaseContext ?? null),
+            payload.phase === 'EVALUATING'
+              ? buildEvaluatingContext(prev.phaseContext, payload.phaseContext)
+              : payload.phaseContext ??
+                (payload.phase === 'DRAWING' && payload.currentTheme
+                  ? {
+                      kind: 'DRAWING' as const,
+                      currentTheme: payload.currentTheme,
+                    }
+                  : prev.phaseContext ?? null),
           players,
         };
       });
@@ -254,7 +298,7 @@ const GamePage = () => {
       if (payload.status >= 400) {
         showToast.error(message);
 
-        if (payload.status === 401) {
+        if (payload.status === 401 || payload.code === 'GAME_UNAUTHORIZED') {
           gameSocket?.disconnect();
           waitingSocket?.disconnect();
           navigate('/login');
@@ -265,6 +309,10 @@ const GamePage = () => {
     };
 
     const handleStartEvaluation = (payload: StartEvaluationPayload) => {
+      if (import.meta.env.DEV) {
+        console.log('[game:startEvaluation]', payload);
+      }
+
       const drawings = Object.fromEntries(
         (payload.drawings ?? []).map((item) => [
           item.drawingId,
@@ -276,11 +324,38 @@ const GamePage = () => {
 
       setRoomState((prev) => {
         if (prev.status !== 'EVALUATING') return prev;
+
+        const currentContext =
+          prev.phaseContext?.kind === 'EVALUATING' ? prev.phaseContext : null;
+
         return {
           ...prev,
           phaseContext: {
             kind: 'EVALUATING',
+            activeUserIds: currentContext?.activeUserIds ?? [],
+            readyUserIds: currentContext?.readyUserIds ?? [],
             drawings,
+            readySummary: currentContext?.readySummary,
+          },
+        };
+      });
+    };
+
+    const handleUpdateReadySummary = (payload: UpdateReadySummaryPayload) => {
+      if (!payload || payload.phase !== 'EVALUATING') return;
+
+      setRoomState((prev) => {
+        if (prev.phaseContext?.kind !== 'EVALUATING') return prev;
+
+        return {
+          ...prev,
+          phaseContext: {
+            ...prev.phaseContext,
+            readySummary: {
+              readyCount: payload.readyCount,
+              totalCount: payload.totalCount,
+              allReady: payload.allReady,
+            },
           },
         };
       });
@@ -291,6 +366,23 @@ const GamePage = () => {
 
       setRoomState((prev) => ({
         ...prev,
+        phaseContext:
+          prev.phaseContext?.kind === 'EVALUATING' &&
+          typeof payload.changes.isReady === 'boolean'
+            ? {
+                ...prev.phaseContext,
+                readyUserIds: payload.changes.isReady
+                  ? Array.from(
+                      new Set([
+                        ...prev.phaseContext.readyUserIds,
+                        String(payload.userId),
+                      ]),
+                    )
+                  : prev.phaseContext.readyUserIds.filter(
+                      (id) => id !== String(payload.userId),
+                    ),
+              }
+            : prev.phaseContext,
         players: prev.players.map((player) =>
           String(player.userId) === String(payload.userId)
             ? { ...player, ...payload.changes }
@@ -308,6 +400,7 @@ const GamePage = () => {
     gameSocket?.on(SOCKET_EVENTS.GAME_JOINED, handleGameJoined);
     gameSocket?.on(SOCKET_EVENTS.SYSTEM_NOTIFICATION, handleGameNotification);
     gameSocket?.on(SOCKET_EVENTS.GAME_START_EVALUATION, handleStartEvaluation);
+    gameSocket?.on(SOCKET_EVENTS.UPDATE_READY_SUMMARY, handleUpdateReadySummary);
     gameSocket?.on(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
     gameSocket?.on('room:updateGameState', syncPhase);
 
@@ -326,6 +419,10 @@ const GamePage = () => {
       gameSocket?.off(
         SOCKET_EVENTS.GAME_START_EVALUATION,
         handleStartEvaluation,
+      );
+      gameSocket?.off(
+        SOCKET_EVENTS.UPDATE_READY_SUMMARY,
+        handleUpdateReadySummary,
       );
       gameSocket?.off(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
       gameSocket?.off('room:updateGameState', syncPhase);
@@ -369,3 +466,5 @@ const GamePage = () => {
 };
 
 export default GamePage;
+
+

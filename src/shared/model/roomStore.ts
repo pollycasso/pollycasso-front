@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { PhaseContext, Player, RoomState, RoomStatus } from '@/shared/model';
+import type { PhaseContext, RoomState, RoomStatus } from '@/shared/model';
 
 interface RoomStoreState {
     roomState: RoomState;

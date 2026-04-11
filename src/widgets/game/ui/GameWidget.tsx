@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuthStore } from '@/entities/user';
 import {
@@ -11,14 +11,14 @@ import {
 } from '@/features/game';
 import { DrawingPhase } from '@/features/game-drawing';
 import { EvaluatingPhase } from '@/features/game-evaluating';
-import { RoundSummaryPhase } from '@/features/game-round-summary';
 import { FinishedPhase } from '@/features/game-finished';
+import { RoundSummaryPhase } from '@/features/game-round-summary';
+import { SOCKET_EVENTS } from '@/shared/api/socket';
+import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import { PHASE_TIME } from '@/shared/model';
 import { useGameState } from '../model/useGameState';
 import { useGameSubmission } from '../model/useGameSubmission';
 import { useThemeInput } from '../model/useThemeInput';
-import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
-import { SOCKET_EVENTS } from '@/shared/api/socket';
 
 interface GameWidgetProps {
   playerMap: Record<string, number>;
@@ -41,11 +41,38 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
   const { completedCount, totalCount, isSubmitting, submitDrawing } =
     useGameSubmission();
 
-  // EVALUATING 단계에서 모든 그림 채점 완료 여부 추적
-  const allRatedRef = useRef(false);
-  const handleAllRatedChange = useCallback((allRated: boolean) => {
-    allRatedRef.current = allRated;
-  }, []);
+  const [evaluationProgress, setEvaluationProgress] = useState({
+    allRated: false,
+    completedCount: 0,
+    totalCount: 0,
+    readyCount: 0,
+    totalActiveCount: 0,
+  });
+
+  const handleEvaluationProgressChange = useCallback(
+    (progress: {
+      allRated: boolean;
+      completedCount: number;
+      totalCount: number;
+      readyCount: number;
+      totalActiveCount: number;
+    }) => {
+      setEvaluationProgress(progress);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (phase === 'EVALUATING') return;
+
+    setEvaluationProgress({
+      allRated: false,
+      completedCount: 0,
+      totalCount: 0,
+      readyCount: 0,
+      totalActiveCount: 0,
+    });
+  }, [phase]);
 
   const syncedPlayers = useMemo(() => {
     if (!players) return [];
@@ -79,8 +106,21 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
       return;
     }
 
+    if (phase === 'EVALUATING') {
+      if (!evaluationProgress.allRated) return;
+      gameSocket?.emit(SOCKET_EVENTS.ROOM_READY_TOGGLE);
+      return;
+    }
+
     submitDrawing();
-  }, [phase, isMyTurn, localInput, gameSocket, submitDrawing]);
+  }, [
+    phase,
+    isMyTurn,
+    localInput,
+    gameSocket,
+    submitDrawing,
+    evaluationProgress.allRated,
+  ]);
 
   const totalTime = useMemo(() => {
     switch (phase) {
@@ -109,8 +149,19 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
       return isMeReady || isSubmitting;
     }
 
+    if (phase === 'EVALUATING') {
+      return !evaluationProgress.allRated;
+    }
+
     return false;
-  }, [phase, isMyTurn, localInput, isMeReady, isSubmitting]);
+  }, [
+    phase,
+    isMyTurn,
+    localInput,
+    isMeReady,
+    isSubmitting,
+    evaluationProgress.allRated,
+  ]);
 
   const renderGameContent = () => {
     switch (phase) {
@@ -128,7 +179,7 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
         return <DrawingPhase />;
 
       case 'EVALUATING':
-        return <EvaluatingPhase onAllRatedChange={handleAllRatedChange} />;
+        return <EvaluatingPhase onProgressChange={handleEvaluationProgressChange} />;
 
       case 'ROUND_SUMMARY':
         return <RoundSummaryPhase />;
@@ -137,7 +188,7 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
         return <FinishedPhase />;
 
       default:
-        return <div className="text-gray-400">로딩 중...</div>;
+        return <div className="text-gray-400">로딩 중..</div>;
     }
   };
 
@@ -163,10 +214,19 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
         <InventoryPanel inventory={inventory} />
         <GameSubmitButton
           onComplete={handleComplete}
-          completedCount={completedCount}
-          totalCount={totalCount}
+          completedCount={
+            phase === 'EVALUATING'
+              ? evaluationProgress.readyCount
+              : completedCount
+          }
+          totalCount={
+            phase === 'EVALUATING'
+              ? evaluationProgress.totalActiveCount
+              : totalCount
+          }
           isReady={phase === 'THEME_SELECTING' ? false : isMeReady}
-          showBadge={phase !== 'THEME_SELECTING'}
+          showBadge={phase === 'DRAWING' || phase === 'EVALUATING'}
+          badgeLabel={phase === 'EVALUATING' ? '준비' : '완료'}
           disabled={isSubmitDisabled}
         />
       </aside>

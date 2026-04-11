@@ -24,6 +24,12 @@ export interface EvaluatingContext {
   kind: 'EVALUATING';
   activeUserIds: string[];
   readyUserIds: string[];
+  drawings: Record<string, DrawData>;
+  readySummary?: {
+    readyCount: number;
+    totalCount: number;
+    allReady: boolean;
+  };
 }
 
 export interface RoundSummaryContext {

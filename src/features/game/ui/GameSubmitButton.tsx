@@ -8,6 +8,7 @@ interface GameSubmitButtonProps {
   isReady: boolean;
   showBadge?: boolean;
   disabled?: boolean;
+  badgeLabel?: string;
 }
 
 export const GameSubmitButton = ({
@@ -17,6 +18,7 @@ export const GameSubmitButton = ({
   isReady,
   showBadge = true,
   disabled = false,
+  badgeLabel = '완료',
 }: GameSubmitButtonProps) => {
   return (
     <div className="relative mt-4 w-full">
@@ -25,7 +27,7 @@ export const GameSubmitButton = ({
           className="absolute top-[-2rem] left-1/2 z-0 flex -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-t-xl px-6 py-2 text-sm font-bold text-white shadow-md"
           style={{ backgroundColor: COLORS.BADGE_PINK }}
         >
-          {completedCount}/{totalCount} 완료
+          {completedCount}/{totalCount} {badgeLabel}
         </div>
       )}
 
