@@ -1,19 +1,55 @@
+import { useEffect } from 'react';
+
 import { GameCanvas } from '@/entities/drawing';
 import { useEvaluating } from '../model/useEvaluating';
 import { EvaluatingNavigation } from './EvaluatingNavigation';
 import { EvaluatingRating } from './EvaluatingRating';
 
-export const EvaluatingPhase = () => {
+interface EvaluatingPhaseProps {
+  onProgressChange?: (progress: {
+    allRated: boolean;
+    completedCount: number;
+    totalCount: number;
+    readyCount: number;
+    totalActiveCount: number;
+  }) => void;
+}
+
+export const EvaluatingPhase = ({ onProgressChange }: EvaluatingPhaseProps) => {
   const {
     hasDrawings,
+    currentOrder,
+    completedCount,
     totalDrawings,
     currentDrawing,
     displayScore,
+    allRated,
+    readyCount,
+    totalActiveCount,
+    canGoPrev,
+    canGoNext,
     handlePrev,
     handleNext,
     handleRate,
     setHoverScore,
   } = useEvaluating();
+
+  useEffect(() => {
+    onProgressChange?.({
+      allRated,
+      completedCount,
+      totalCount: totalDrawings,
+      readyCount,
+      totalActiveCount,
+    });
+  }, [
+    allRated,
+    completedCount,
+    totalDrawings,
+    readyCount,
+    totalActiveCount,
+    onProgressChange,
+  ]);
 
   if (!hasDrawings || !currentDrawing) {
     return (
@@ -25,13 +61,23 @@ export const EvaluatingPhase = () => {
 
   return (
     <>
+      <div className="absolute -top-12 left-6 z-30 flex items-center gap-3">
+        <span className="text-2xl font-bold text-gray-700">평가 작품</span>
+      </div>
+      <div className="absolute -top-12 left-1/2 z-30 -translate-x-1/2">
+        <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-700">
+          {currentOrder}/{totalDrawings}
+        </span>
+      </div>
+
       <EvaluatingNavigation
         onPrev={handlePrev}
         onNext={handleNext}
-        disabled={totalDrawings <= 1}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
       />
 
-      <GameCanvas readOnly={true} lines={currentDrawing.lines} />
+      <GameCanvas readOnly={true} lines={currentDrawing.drawData.lines} />
 
       <EvaluatingRating
         displayScore={displayScore}
