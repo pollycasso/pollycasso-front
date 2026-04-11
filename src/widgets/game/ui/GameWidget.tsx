@@ -188,7 +188,7 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
         return <FinishedPhase />;
 
       default:
-        return <div className="text-gray-400">로딩 중..</div>;
+        return <div className="text-gray-400">로딩 중...</div>;
     }
   };
 
