@@ -1,12 +1,31 @@
 import type { DrawData } from '@/entities/drawing';
 
-export interface RoundResult {
-  userId: string; // 해당 그림을 그린 사람
-  drawData: DrawData; // 해당 그림 데이터
-  score: number; // 해당 그림 점수 (예: 4.25)
-  isMine: boolean; // 해당 그림이 내 그림인가?
+export interface RoundSummaryRanking {
+  roomMemberId: number;
+  nickname: string;
+  drawingId: string;
+  score: number;
+  totalScore: number;
 }
 
 export interface RoundSummaryContext {
-  ranking: RoundResult[];
+  kind: 'ROUND_SUMMARY';
+  rankings: RoundSummaryRanking[];
+  drawingsById: Record<string, DrawData>;
+  readyUserIds: number[];
+  readySummary?: {
+    readyCount: number;
+    totalCount: number;
+    allReady: boolean;
+  };
+}
+
+export interface RoundSummaryResult {
+  roomMemberId: number;
+  nickname: string;
+  drawingId: string;
+  drawData: DrawData;
+  score: number;
+  totalScore: number;
+  isMine: boolean;
 }

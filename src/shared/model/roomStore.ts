@@ -23,6 +23,7 @@ const initialRoomState: RoomState = {
     players: [],
     currentRound: null,
     totalRounds: null,
+    totalScores: {},
     phaseContext: null as PhaseContext | null,
     teamScore: null,
 };

@@ -183,6 +183,7 @@ export const MOCK_FINISHED_ROOM_STATE: RoomState = {
   players: MOCK_PLAYERS,
   currentRound: 3,
   totalRounds: 3,
+  totalScores: {},
 
   phaseContext: MOCK_FINISH_CONTEXT,
 
