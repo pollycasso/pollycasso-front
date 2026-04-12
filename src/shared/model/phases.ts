@@ -34,15 +34,22 @@ export interface EvaluatingContext {
 
 export interface RoundSummaryContext {
   kind: 'ROUND_SUMMARY';
-  ranking: RoundResult[];
+  rankings: RoundSummaryRanking[];
+  drawingsById: Record<string, DrawData>;
+  readyUserIds: number[];
+  readySummary?: {
+    readyCount: number;
+    totalCount: number;
+    allReady: boolean;
+  };
 }
 
-export interface RoundResult {
-  kind: 'ROUND_RESULT';
-  userId: string;
-  drawData: DrawData;
+export interface RoundSummaryRanking {
+  roomMemberId: number;
+  nickname: string;
+  drawingId: string;
   score: number;
-  isMine: boolean;
+  totalScore: number;
 }
 
 export interface FinishContext {

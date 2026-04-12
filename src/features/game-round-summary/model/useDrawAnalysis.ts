@@ -11,7 +11,10 @@ import {
 import { ACHIEVEMENT_CONFIG } from '../utils/achievementConfig';
 import type { AchievementID } from '../utils/achievementConfig';
 
-export const useDrawAnalysis = (drawData: DrawData, score: number) => {
+export const useDrawAnalysis = (
+  drawData: DrawData,
+  score: number,
+) => {
   // 가장 많이 사용한 3가지 색상
   const topColors = useMemo(() => extractTopColors(drawData.lines), [drawData]);
 

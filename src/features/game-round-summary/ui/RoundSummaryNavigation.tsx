@@ -1,27 +1,27 @@
 import { RANK_ICONS } from '../constants/rankIcon';
-import type { RoundResult } from '../model/types';
+import type { RoundSummaryResult } from '../model/types';
 
 interface RoundSummaryNavigationProps {
-  ranking: RoundResult[];
+  rankings: RoundSummaryResult[];
   selectedRank: number;
   onSelect: (rank: number) => void;
 }
 
 export const RoundSummaryNavigation = ({
-  ranking,
+  rankings,
   selectedRank,
   onSelect,
 }: RoundSummaryNavigationProps) => {
   return (
     <div className="absolute left-10 top-72 -translate-y-1/2 flex flex-col gap-3 z-20">
-      {ranking.map((result, index) => {
+      {rankings.map((result, index) => {
         const rank = index + 1;
         const rankIcon = RANK_ICONS[rank as keyof typeof RANK_ICONS];
         const isSelected = selectedRank === rank;
 
         return (
           <button
-            key={result.userId}
+            key={result.drawingId}
             onClick={() => onSelect(rank)}
             className={`
               w-44 h-16 rounded-2xl flex items-center px-4 gap-3 transition-all
@@ -37,7 +37,7 @@ export const RoundSummaryNavigation = ({
             </div>
 
             <span className="text-white font-bold truncate">
-              {result.userId}
+              {result.nickname}
             </span>
 
             {result.isMine && (

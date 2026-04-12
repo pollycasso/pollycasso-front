@@ -93,6 +93,19 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
   const { localInput, handleInputChange, handleRandomTheme } =
     useThemeInput(isMyTurn);
 
+  const roundSummaryProgress = useMemo(() => {
+    if (phaseContext?.kind !== 'ROUND_SUMMARY') return null;
+
+    const readyCount =
+      phaseContext.readySummary?.readyCount ?? phaseContext.readyUserIds.length;
+    const totalCount = phaseContext.readySummary?.totalCount ?? players.length;
+
+    return {
+      readyCount,
+      totalCount,
+    };
+  }, [phaseContext, players.length]);
+
   const handleComplete = useCallback(() => {
     if (phase === 'THEME_SELECTING') {
       if (!isMyTurn) return;
@@ -106,13 +119,20 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
       return;
     }
 
+    if (phase === 'ROUND_SUMMARY') {
+      gameSocket?.emit(SOCKET_EVENTS.ROOM_READY_TOGGLE);
+      return;
+    }
+
     if (phase === 'EVALUATING') {
       if (!evaluationProgress.allRated) return;
       gameSocket?.emit(SOCKET_EVENTS.ROOM_READY_TOGGLE);
       return;
     }
 
-    submitDrawing();
+    if (phase === 'DRAWING') {
+      submitDrawing();
+    }
   }, [
     phase,
     isMyTurn,
@@ -217,16 +237,28 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
           completedCount={
             phase === 'EVALUATING'
               ? evaluationProgress.readyCount
-              : completedCount
+              : phase === 'ROUND_SUMMARY'
+                ? (roundSummaryProgress?.readyCount ?? 0)
+                : completedCount
           }
           totalCount={
             phase === 'EVALUATING'
               ? evaluationProgress.totalActiveCount
-              : totalCount
+              : phase === 'ROUND_SUMMARY'
+                ? (roundSummaryProgress?.totalCount ?? 0)
+                : totalCount
           }
           isReady={phase === 'THEME_SELECTING' ? false : isMeReady}
-          showBadge={phase === 'DRAWING' || phase === 'EVALUATING'}
-          badgeLabel={phase === 'EVALUATING' ? '준비' : '완료'}
+          showBadge={
+            phase === 'DRAWING' ||
+            phase === 'EVALUATING' ||
+            phase === 'ROUND_SUMMARY'
+          }
+          badgeLabel={
+            phase === 'EVALUATING' || phase === 'ROUND_SUMMARY'
+              ? '준비'
+              : '완료'
+          }
           disabled={isSubmitDisabled}
         />
       </aside>

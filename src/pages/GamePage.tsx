@@ -114,6 +114,7 @@ const GamePage = () => {
       currentTheme?: string | null;
       phaseContext?: PhaseContext | null;
       endsAt: number | null;
+      totalScores?: Record<string, number>;
       roomMemberIdByUserId?: Record<string, number>;
       snapshot?: {
         players: Array<{
@@ -147,7 +148,7 @@ const GamePage = () => {
     }
 
     interface UpdateReadySummaryPayload {
-      phase: 'DRAWING' | 'EVALUATING';
+      phase: 'DRAWING' | 'EVALUATING' | 'ROUND_SUMMARY';
       readyCount: number;
       totalCount: number;
       allReady: boolean;
@@ -221,6 +222,18 @@ const GamePage = () => {
             player.isReady,
           ]) ?? [],
         );
+        const nextPhaseContext =
+          payload.phase === 'EVALUATING'
+            ? buildEvaluatingContext(prev.phaseContext, payload.phaseContext)
+            : payload.phaseContext ??
+              (payload.phase === 'DRAWING' && payload.currentTheme
+                ? {
+                    kind: 'DRAWING' as const,
+                    currentTheme: payload.currentTheme,
+                  }
+                : isPhaseChanged
+                  ? null
+                  : prev.phaseContext ?? null);
 
         const players = prev.players.map((player) => {
           const snapshotReady = snapshotReadyMap.get(String(player.userId));
@@ -245,16 +258,8 @@ const GamePage = () => {
           ...prev,
           status: payload.phase,
           endsAt: payload.endsAt ?? null,
-          phaseContext:
-            payload.phase === 'EVALUATING'
-              ? buildEvaluatingContext(prev.phaseContext, payload.phaseContext)
-              : payload.phaseContext ??
-                (payload.phase === 'DRAWING' && payload.currentTheme
-                  ? {
-                      kind: 'DRAWING' as const,
-                      currentTheme: payload.currentTheme,
-                    }
-                  : prev.phaseContext ?? null),
+          totalScores: payload.totalScores ?? prev.totalScores,
+          phaseContext: nextPhaseContext,
           players,
         };
       });
@@ -342,27 +347,60 @@ const GamePage = () => {
     };
 
     const handleUpdateReadySummary = (payload: UpdateReadySummaryPayload) => {
-      if (!payload || payload.phase !== 'EVALUATING') return;
+      if (!payload) return;
 
       setRoomState((prev) => {
-        if (prev.phaseContext?.kind !== 'EVALUATING') return prev;
+        if (payload.phase === 'EVALUATING') {
+          if (prev.phaseContext?.kind !== 'EVALUATING') return prev;
 
-        return {
-          ...prev,
-          phaseContext: {
-            ...prev.phaseContext,
-            readySummary: {
-              readyCount: payload.readyCount,
-              totalCount: payload.totalCount,
-              allReady: payload.allReady,
+          return {
+            ...prev,
+            phaseContext: {
+              ...prev.phaseContext,
+              readySummary: {
+                readyCount: payload.readyCount,
+                totalCount: payload.totalCount,
+                allReady: payload.allReady,
+              },
             },
-          },
-        };
+          };
+        }
+
+        if (payload.phase === 'ROUND_SUMMARY') {
+          if (prev.phaseContext?.kind !== 'ROUND_SUMMARY') return prev;
+
+          return {
+            ...prev,
+            phaseContext: {
+              ...prev.phaseContext,
+              readySummary: {
+                readyCount: payload.readyCount,
+                totalCount: payload.totalCount,
+                allReady: payload.allReady,
+              },
+            },
+          };
+        }
+
+        return prev;
       });
     };
 
     const handleUpdatePlayer = (payload: UpdatePlayerPayload) => {
       if (!payload?.userId || !payload?.changes) return;
+      const shouldValidateRoundSummaryReadyUpdate =
+        roomState.status === 'ROUND_SUMMARY' &&
+        typeof payload.changes.isReady === 'boolean';
+      const normalizedRoundSummaryUserId = shouldValidateRoundSummaryReadyUpdate
+        ? Number(payload.userId)
+        : null;
+
+      if (
+        shouldValidateRoundSummaryReadyUpdate &&
+        !Number.isFinite(normalizedRoundSummaryUserId)
+      ) {
+        return;
+      }
 
       setRoomState((prev) => ({
         ...prev,
@@ -382,6 +420,25 @@ const GamePage = () => {
                       (id) => id !== String(payload.userId),
                     ),
               }
+            : prev.phaseContext?.kind === 'ROUND_SUMMARY' &&
+                typeof payload.changes.isReady === 'boolean'
+              ? {
+                  ...prev.phaseContext,
+                  readyUserIds: (() => {
+                    const numericUserId = Number(payload.userId);
+
+                    return payload.changes.isReady
+                      ? Array.from(
+                          new Set([
+                            ...prev.phaseContext.readyUserIds,
+                            numericUserId,
+                          ]),
+                        )
+                      : prev.phaseContext.readyUserIds.filter(
+                          (id) => id !== numericUserId,
+                        );
+                  })(),
+                }
             : prev.phaseContext,
         players: prev.players.map((player) =>
           String(player.userId) === String(payload.userId)
@@ -466,5 +523,4 @@ const GamePage = () => {
 };
 
 export default GamePage;
-
 

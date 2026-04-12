@@ -16,6 +16,7 @@ export interface RoomState {
   players: Player[];
   currentRound: number | null;
   totalRounds: number | null;
+  totalScores: Record<string, number>;
 
   phaseContext: PhaseContext;
 
