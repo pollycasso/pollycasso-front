@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuthStore } from '@/entities/user';
 import {
@@ -92,6 +92,7 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
 
   const { localInput, handleInputChange, handleRandomTheme } =
     useThemeInput(isMyTurn);
+  const isFinishedPhase = phase === 'FINISHED';
 
   const roundSummaryProgress = useMemo(() => {
     if (phaseContext?.kind !== 'ROUND_SUMMARY') return null;
@@ -132,6 +133,11 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
 
     if (phase === 'DRAWING') {
       submitDrawing();
+      return;
+    }
+
+    if (phase === 'FINISHED') {
+      return;
     }
   }, [
     phase,
@@ -171,6 +177,10 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
 
     if (phase === 'EVALUATING') {
       return !evaluationProgress.allRated;
+    }
+
+    if (phase === 'FINISHED') {
+      return true;
     }
 
     return false;
@@ -232,35 +242,37 @@ const GameWidget = ({ playerMap }: GameWidgetProps) => {
 
       <aside className="flex h-full flex-col justify-center gap-y-20">
         <InventoryPanel inventory={inventory} />
-        <GameSubmitButton
-          onComplete={handleComplete}
-          completedCount={
-            phase === 'EVALUATING'
-              ? evaluationProgress.readyCount
-              : phase === 'ROUND_SUMMARY'
-                ? (roundSummaryProgress?.readyCount ?? 0)
-                : completedCount
-          }
-          totalCount={
-            phase === 'EVALUATING'
-              ? evaluationProgress.totalActiveCount
-              : phase === 'ROUND_SUMMARY'
-                ? (roundSummaryProgress?.totalCount ?? 0)
-                : totalCount
-          }
-          isReady={phase === 'THEME_SELECTING' ? false : isMeReady}
-          showBadge={
-            phase === 'DRAWING' ||
-            phase === 'EVALUATING' ||
-            phase === 'ROUND_SUMMARY'
-          }
-          badgeLabel={
-            phase === 'EVALUATING' || phase === 'ROUND_SUMMARY'
-              ? '준비'
-              : '완료'
-          }
-          disabled={isSubmitDisabled}
-        />
+        {!isFinishedPhase && (
+          <GameSubmitButton
+            onComplete={handleComplete}
+            completedCount={
+              phase === 'EVALUATING'
+                ? evaluationProgress.readyCount
+                : phase === 'ROUND_SUMMARY'
+                  ? (roundSummaryProgress?.readyCount ?? 0)
+                  : completedCount
+            }
+            totalCount={
+              phase === 'EVALUATING'
+                ? evaluationProgress.totalActiveCount
+                : phase === 'ROUND_SUMMARY'
+                  ? (roundSummaryProgress?.totalCount ?? 0)
+                  : totalCount
+            }
+            isReady={phase === 'THEME_SELECTING' ? false : isMeReady}
+            showBadge={
+              phase === 'DRAWING' ||
+              phase === 'EVALUATING' ||
+              phase === 'ROUND_SUMMARY'
+            }
+            badgeLabel={
+              phase === 'EVALUATING' || phase === 'ROUND_SUMMARY'
+                ? '준비'
+                : '완료'
+            }
+            disabled={isSubmitDisabled}
+          />
+        )}
       </aside>
     </div>
   );

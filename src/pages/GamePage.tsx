@@ -5,6 +5,14 @@ import { useWaitingSocket } from '@/shared/api/socket/WaitingSocketProvider';
 import { useGameSocket } from '@/shared/api/socket/GameSocketProvider';
 import { SOCKET_EVENTS } from '@/shared/api/socket';
 import type {
+  RewardsGrantedPayload,
+  RoomUpdateGameStatePayload,
+} from '@/shared/api/socket';
+import { useSound } from '@/entities/sound';
+import { useAuthStore } from '@/entities/user';
+import { SoundManager } from '@/shared/api/sound/manager';
+import { SOUND_ASSETS } from '@/shared/api/sound/assets';
+import type {
   EvaluatingContext,
   PhaseContext,
   RoomState,
@@ -24,6 +32,7 @@ const GAME_PHASE_STATUSES: RoomStatus[] = [
   'ROUND_SUMMARY',
   'FINISHED',
 ];
+const FINISHED_MIN_DURATION_MS = 3 * 60 * 1000;
 
 const GAME_NOTIFICATION_MESSAGES: Record<string, string> = {
   INVALID_INPUT: '요청 형식이 올바르지 않습니다.',
@@ -55,9 +64,14 @@ const GamePage = () => {
   const pendingEvaluationDrawingsRef = useRef<
     EvaluatingContext['drawings'] | null
   >(null);
+  const handledRewardMatchIdsRef = useRef<Set<number>>(new Set());
+  const finishedEnteredAtRef = useRef<number | null>(null);
+  const deferredWaitingPayloadRef = useRef<RoomUpdateGameStatePayload | null>(null);
+  const deferredWaitingTimerRef = useRef<number | null>(null);
 
   const roomState = useRoomStore((state) => state.roomState);
   const setRoomState = useRoomStore((state) => state.setRoomState);
+  const { isMuted, sfxVolume } = useSound();
 
   const [playerMap, setPlayerMap] = useState<Record<string, number>>({});
   const [waitingJoined, setWaitingJoined] = useState(false);
@@ -71,10 +85,17 @@ const GamePage = () => {
   const hasValidTargetRoomId = Number.isFinite(targetRoomId);
 
   useEffect(() => {
+    if (deferredWaitingTimerRef.current !== null) {
+      window.clearTimeout(deferredWaitingTimerRef.current);
+      deferredWaitingTimerRef.current = null;
+    }
+    deferredWaitingPayloadRef.current = null;
+    finishedEnteredAtRef.current = null;
     setWaitingJoined(false);
     setWaitingRoomId(null);
     setGameJoinPending(false);
     setGameJoinedRoomId(null);
+    handledRewardMatchIdsRef.current.clear();
   }, [targetRoomId]);
 
   useEffect(() => {
@@ -108,27 +129,18 @@ const GamePage = () => {
 
   useEffect(() => {
     if (!waitingSocket && !gameSocket) return;
-
-    interface UpdateGameStatePayload {
-      phase: RoomStatus;
-      currentTheme?: string | null;
-      phaseContext?: PhaseContext | null;
-      endsAt: number | null;
-      totalScores?: Record<string, number>;
-      roomMemberIdByUserId?: Record<string, number>;
-      snapshot?: {
-        players: Array<{
-          userId: number | string;
-          isReady: boolean;
-        }>;
-        readySummary?: {
-          phase: 'DRAWING';
-          readyCount: number;
-          totalCount: number;
-          allReady: boolean;
-        };
-      };
-    }
+    const normalizeEndsAt = (
+      rawEndsAt: RoomUpdateGameStatePayload['endsAt'],
+    ): number | null => {
+      if (typeof rawEndsAt === 'number') {
+        return rawEndsAt;
+      }
+      if (typeof rawEndsAt === 'string') {
+        const parsedEndsAt = Date.parse(rawEndsAt);
+        return Number.isFinite(parsedEndsAt) ? parsedEndsAt : null;
+      }
+      return null;
+    };
 
     interface StartEvaluationPayload {
       drawings: Array<{
@@ -205,28 +217,59 @@ const GamePage = () => {
       };
     };
 
-    const syncPhase = (payload: UpdateGameStatePayload) => {
-      if (!payload?.phase) return;
-      if (import.meta.env.DEV) {
-        console.log('[room:updateGameState]', payload);
+    const clearDeferredWaiting = () => {
+      if (deferredWaitingTimerRef.current !== null) {
+        window.clearTimeout(deferredWaitingTimerRef.current);
+        deferredWaitingTimerRef.current = null;
       }
-      if (payload.phase !== 'EVALUATING') {
+      deferredWaitingPayloadRef.current = null;
+    };
+
+    const applyPhasePayload = (payload: RoomUpdateGameStatePayload) => {
+      const nextStatus = payload.phase as RoomStatus;
+      const isWaitingPhase = nextStatus === 'WAITING';
+      const payloadPhaseContext = payload.phaseContext as
+        | PhaseContext
+        | null
+        | undefined;
+
+      if (nextStatus !== 'EVALUATING') {
         pendingEvaluationDrawingsRef.current = null;
       }
 
+      if (isWaitingPhase) {
+        handledRewardMatchIdsRef.current.clear();
+      }
+
       setRoomState((prev) => {
-        const isPhaseChanged = prev.status !== payload.phase;
+        const isPhaseChanged = prev.status !== nextStatus;
         const snapshotReadyMap = new Map(
           payload.snapshot?.players.map((player) => [
             String(player.userId),
             player.isReady,
           ]) ?? [],
         );
+        const finalResultByUserId = new Map(
+          (payload.finalResults ?? []).map((result) => [String(result.userId), result]),
+        );
         const nextPhaseContext =
-          payload.phase === 'EVALUATING'
-            ? buildEvaluatingContext(prev.phaseContext, payload.phaseContext)
-            : payload.phaseContext ??
-              (payload.phase === 'DRAWING' && payload.currentTheme
+          nextStatus === 'EVALUATING'
+            ? buildEvaluatingContext(prev.phaseContext, payloadPhaseContext)
+            : nextStatus === 'WAITING'
+              ? null
+            : nextStatus === 'FINISHED'
+              ? {
+                  kind: 'FINISHED' as const,
+                  results: (payload.finalResults ?? []).map((result) => ({
+                    userId: String(result.userId),
+                    rank: result.placement,
+                    expGained: 0,
+                    coinsGained: 0,
+                    didLevelUp: false,
+                  })),
+                }
+              : payloadPhaseContext ??
+                (nextStatus === 'DRAWING' && payload.currentTheme
                 ? {
                     kind: 'DRAWING' as const,
                     currentTheme: payload.currentTheme,
@@ -236,7 +279,17 @@ const GamePage = () => {
                   : prev.phaseContext ?? null);
 
         const players = prev.players.map((player) => {
+          const finalResult = finalResultByUserId.get(String(player.userId));
           const snapshotReady = snapshotReadyMap.get(String(player.userId));
+
+          if (finalResult) {
+            return {
+              ...player,
+              totalScore: finalResult.score,
+              isReady: false,
+            };
+          }
+
           if (typeof snapshotReady === 'boolean') {
             return {
               ...player,
@@ -248,6 +301,7 @@ const GamePage = () => {
             return {
               ...player,
               isReady: false,
+              totalScore: isWaitingPhase ? 0 : player.totalScore,
             };
           }
 
@@ -256,9 +310,11 @@ const GamePage = () => {
 
         return {
           ...prev,
-          status: payload.phase,
-          endsAt: payload.endsAt ?? null,
-          totalScores: payload.totalScores ?? prev.totalScores,
+          status: nextStatus,
+          endsAt: normalizeEndsAt(payload.endsAt),
+          totalScores: isWaitingPhase
+            ? (payload.totalScores ?? {})
+            : (payload.totalScores ?? prev.totalScores),
           phaseContext: nextPhaseContext,
           players,
         };
@@ -267,6 +323,52 @@ const GamePage = () => {
       if (payload.roomMemberIdByUserId) {
         setPlayerMap(payload.roomMemberIdByUserId);
       }
+    };
+
+    const syncPhase = (payload: RoomUpdateGameStatePayload) => {
+      if (!payload?.phase) return;
+      if (import.meta.env.DEV) {
+        console.log('[room:updateGameState]', payload);
+      }
+
+      const nextStatus = payload.phase as RoomStatus;
+
+      if (nextStatus === 'FINISHED') {
+        finishedEnteredAtRef.current = Date.now();
+        clearDeferredWaiting();
+        applyPhasePayload(payload);
+        return;
+      }
+
+      if (nextStatus === 'WAITING' && finishedEnteredAtRef.current !== null) {
+        const elapsedMs = Date.now() - finishedEnteredAtRef.current;
+        const remainingMs = FINISHED_MIN_DURATION_MS - elapsedMs;
+
+        if (remainingMs > 0) {
+          deferredWaitingPayloadRef.current = payload;
+
+          if (deferredWaitingTimerRef.current === null) {
+            deferredWaitingTimerRef.current = window.setTimeout(() => {
+              const deferredPayload = deferredWaitingPayloadRef.current;
+              deferredWaitingTimerRef.current = null;
+              deferredWaitingPayloadRef.current = null;
+              finishedEnteredAtRef.current = null;
+
+              if (deferredPayload) {
+                applyPhasePayload(deferredPayload);
+              }
+            }, remainingMs);
+          }
+          return;
+        }
+      }
+
+      if (nextStatus === 'WAITING') {
+        finishedEnteredAtRef.current = null;
+        clearDeferredWaiting();
+      }
+
+      applyPhasePayload(payload);
     };
 
     const handleGameConnect = () => {
@@ -442,6 +544,65 @@ const GamePage = () => {
       }));
     };
 
+    const handleRewardsGranted = (payload: RewardsGrantedPayload) => {
+      if (!payload || !Number.isFinite(payload.matchId)) return;
+
+      const handledRewardMatchIds = handledRewardMatchIdsRef.current;
+      if (handledRewardMatchIds.has(payload.matchId)) return;
+      handledRewardMatchIds.add(payload.matchId);
+
+      const authState = useAuthStore.getState();
+      const currentUserId = authState.user?.id;
+
+      authState.updateUser({
+        coins: (authState.user?.coins ?? 0) + payload.coin,
+        currentExp: (authState.user?.currentExp ?? 0) + payload.exp,
+      });
+
+      setRoomState((prev) => {
+        const nextPlayers = prev.players.map((player) => {
+          if (String(player.userId) !== String(currentUserId)) return player;
+          return {
+            ...player,
+            coins: (player.coins ?? 0) + payload.coin,
+            exp: (player.exp ?? 0) + payload.exp,
+          };
+        });
+
+        if (prev.phaseContext?.kind !== 'FINISHED') {
+          return {
+            ...prev,
+            players: nextPlayers,
+          };
+        }
+
+        return {
+          ...prev,
+          players: nextPlayers,
+          phaseContext: {
+            ...prev.phaseContext,
+            results: prev.phaseContext.results.map((result) => {
+              if (String(result.userId) !== String(currentUserId)) return result;
+              return {
+                ...result,
+                rank: payload.placement,
+                expGained: payload.exp,
+                coinsGained: payload.coin,
+              };
+            }),
+          },
+        };
+      });
+
+      showToast.success(
+        `Reward received: +${payload.exp} EXP, +${payload.coin} Coin (Rank ${payload.placement})`,
+      );
+
+      if (!isMuted) {
+        SoundManager.playSfx(SOUND_ASSETS.SFX.LEVELUP, sfxVolume);
+      }
+    };
+
     waitingSocket?.on('room:joinSuccess', handleWaitingJoinSuccess);
     waitingSocket?.on('room:stateSync', syncStatus);
     waitingSocket?.on('room:updateGameState', syncPhase);
@@ -453,6 +614,7 @@ const GamePage = () => {
     gameSocket?.on(SOCKET_EVENTS.GAME_START_EVALUATION, handleStartEvaluation);
     gameSocket?.on(SOCKET_EVENTS.UPDATE_READY_SUMMARY, handleUpdateReadySummary);
     gameSocket?.on(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
+    gameSocket?.on(SOCKET_EVENTS.USER_REWARDS_GRANTED, handleRewardsGranted);
     gameSocket?.on('room:updateGameState', syncPhase);
 
     return () => {
@@ -476,12 +638,19 @@ const GamePage = () => {
         handleUpdateReadySummary,
       );
       gameSocket?.off(SOCKET_EVENTS.UPDATE_PLAYER, handleUpdatePlayer);
+      gameSocket?.off(
+        SOCKET_EVENTS.USER_REWARDS_GRANTED,
+        handleRewardsGranted,
+      );
       gameSocket?.off('room:updateGameState', syncPhase);
+      clearDeferredWaiting();
     };
   }, [
     waitingSocket,
     gameSocket,
     setRoomState,
+    isMuted,
+    sfxVolume,
     navigate,
     hasValidTargetRoomId,
     targetRoomId,

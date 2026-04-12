@@ -11,7 +11,9 @@ export const useGameFinished = (
     if (!finishContext || !finishContext.results) return [];
 
     const mergedList = finishContext.results.map((result) => {
-      const player = players.find((p) => p.userId === result.userId);
+      const player = players.find(
+        (p) => String(p.userId) === String(result.userId),
+      );
 
       if (!player) return null;
 

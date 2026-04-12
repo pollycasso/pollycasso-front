@@ -7,6 +7,7 @@ export const SOCKET_EVENTS = {
 
   ROOM_STATE_SYNC: 'room:stateSync',
   UPDATE_GAME_STATE: 'room:updateGameState',
+  USER_REWARDS_GRANTED: 'user:rewardsGranted',
   ROOM_JOIN: 'room:join',
   ROOM_READY_TOGGLE: 'room:readyToggle',
   ROOM_CHANGE_TEAM: 'room:changeTeam',
