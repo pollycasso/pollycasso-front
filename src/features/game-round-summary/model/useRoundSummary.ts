@@ -12,9 +12,10 @@ export const useRoundSummary = () => {
     roomState.phaseContext?.kind === 'ROUND_SUMMARY'
       ? roomState.phaseContext
       : null;
-  const source = liveContext ?? MOCK_ROUND_SUMMARY;
-  const { rankings, drawingsById, readyUserIds } = source;
-  const totalScores = roomState.totalScores ?? {};
+  const source = liveContext ?? (import.meta.env.DEV ? MOCK_ROUND_SUMMARY : null);
+  const rankings = source?.rankings ?? [];
+  const drawingsById = source?.drawingsById ?? {};
+  const readyUserIds = source?.readyUserIds ?? [];
   const totalPlayerCount = roomState.players.length || rankings.length;
 
   const summaryResults = useMemo(
@@ -22,10 +23,9 @@ export const useRoundSummary = () => {
       rankings.map((item) => ({
         ...item,
         drawData: drawingsById[item.drawingId] ?? { lines: [] },
-        totalScore: totalScores[item.drawingId] ?? item.totalScore,
         isMine: item.nickname === user?.nickname,
       })),
-    [drawingsById, rankings, totalScores, user?.nickname],
+    [drawingsById, rankings, user?.nickname],
   );
 
   const currentResult = useMemo(() => {
@@ -34,12 +34,12 @@ export const useRoundSummary = () => {
 
   const readySummary = useMemo(
     () =>
-      source.readySummary ?? {
+      source?.readySummary ?? {
         readyCount: readyUserIds.length,
         totalCount: totalPlayerCount,
         allReady: totalPlayerCount > 0 && readyUserIds.length >= totalPlayerCount,
       },
-    [readyUserIds.length, source, totalPlayerCount],
+    [readyUserIds.length, source?.readySummary, totalPlayerCount],
   );
 
   const handleRankSelect = (rank: number) => {
@@ -50,7 +50,7 @@ export const useRoundSummary = () => {
     rankings: summaryResults,
     readyUserIds,
     readySummary,
-    totalScores,
+    hasLiveContext: Boolean(liveContext),
     selectedRank,
     currentResult,
     handleRankSelect,

@@ -120,6 +120,7 @@ export const MOCK_ROOM_WAITING: RoomState = {
   },
 
   players: [MOCK_ME, MOCK_OPPONENT, MOCK_DISCONNECTED, MOCK_BONUS],
+  totalScores: {},
 
   phaseContext: null,
 
@@ -145,6 +146,7 @@ export const MOCK_GAME_SELECTING: RoomState = {
   },
 
   players: [MOCK_ME, MOCK_OPPONENT, MOCK_DISCONNECTED, MOCK_BONUS],
+  totalScores: {},
 
   phaseContext: {
     kind: 'THEME_SELECTING',
@@ -171,6 +173,7 @@ export const MOCK_GAME_DRAWING: RoomState = {
   },
 
   players: [MOCK_ME, MOCK_OPPONENT, MOCK_DISCONNECTED, MOCK_BONUS],
+  totalScores: {},
 
   phaseContext: {
     kind: 'DRAWING',

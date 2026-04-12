@@ -388,19 +388,6 @@ const GamePage = () => {
 
     const handleUpdatePlayer = (payload: UpdatePlayerPayload) => {
       if (!payload?.userId || !payload?.changes) return;
-      const shouldValidateRoundSummaryReadyUpdate =
-        roomState.status === 'ROUND_SUMMARY' &&
-        typeof payload.changes.isReady === 'boolean';
-      const normalizedRoundSummaryUserId = shouldValidateRoundSummaryReadyUpdate
-        ? Number(payload.userId)
-        : null;
-
-      if (
-        shouldValidateRoundSummaryReadyUpdate &&
-        !Number.isFinite(normalizedRoundSummaryUserId)
-      ) {
-        return;
-      }
 
       setRoomState((prev) => ({
         ...prev,
@@ -425,7 +412,14 @@ const GamePage = () => {
               ? {
                   ...prev.phaseContext,
                   readyUserIds: (() => {
+                    if (prev.status !== 'ROUND_SUMMARY') {
+                      return prev.phaseContext.readyUserIds;
+                    }
+
                     const numericUserId = Number(payload.userId);
+                    if (!Number.isFinite(numericUserId)) {
+                      return prev.phaseContext.readyUserIds;
+                    }
 
                     return payload.changes.isReady
                       ? Array.from(
@@ -523,4 +517,3 @@ const GamePage = () => {
 };
 
 export default GamePage;
-
